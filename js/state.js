@@ -3,7 +3,7 @@
  */
 
 window.CPI_STATE = {
-  db: null,
+  db: window.CPI_DATABASE || window.CPI_DATABASE_DEFAULT || null,
   currentTab: 'overview',
   theme: localStorage.getItem('cpi_theme') || 'dark',
   treePanelOpen: false,

@@ -8,17 +8,26 @@ window.App = (function () {
   const state = window.CPI_STATE;
 
   async function init() {
-    if (!window.CPI_DATABASE && !window.CPI_DATABASE_DEFAULT) {
+    state.db = window.CPI_DATABASE || window.CPI_DATABASE_DEFAULT || state.db;
+    if (!state.db) {
       console.error('CPI_DATABASE not loaded!');
-      alert('CPI Database not found! Make sure cpi_data.js is generated.');
       return;
+    }
+
+    if (!window.CPI_DATABASE_DEFAULT && window.CPI_DATABASE) {
+      window.CPI_DATABASE_DEFAULT = window.CPI_DATABASE;
     }
 
     // Initialize updater and check IndexedDB for custom database
     if (window.CPI_UPDATER) {
-      await window.CPI_UPDATER.init();
-    } else {
-      state.db = window.CPI_DATABASE;
+      try {
+        await window.CPI_UPDATER.init();
+      } catch (err) {
+        console.warn('CPI_UPDATER initialization failed, fallback to default:', err);
+      }
+    }
+    if (!state.db) {
+      state.db = window.CPI_DATABASE_DEFAULT || window.CPI_DATABASE;
     }
 
     // Apply Theme

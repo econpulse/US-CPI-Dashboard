@@ -7,6 +7,7 @@ window.CPI_OVERVIEW = (function () {
   const utils = window.CPI_UTILS;
 
   function renderOverview() {
+    if (!state.db) return;
     // 1. Update Headline KPIs
     const kpiMap = [
       { id: 'headline', item: 'SA0' },
@@ -37,8 +38,8 @@ window.CPI_OVERVIEW = (function () {
 
     // 2. Render The Big 8 Grid Cards (strictly sorted by sort_sequence)
     const major8Container = document.getElementById('overview-major8-grid');
-    if (major8Container && state.db.major_8) {
-      const sortedMajor8 = [...state.db.major_8].sort((a, b) => state.db.items[a].seq - state.db.items[b].seq);
+    if (major8Container && state.db && state.db.major_8) {
+      const sortedMajor8 = [...state.db.major_8].sort((a, b) => (state.db.items[a]?.seq || 0) - (state.db.items[b]?.seq || 0));
       
       major8Container.innerHTML = sortedMajor8.map(code => {
         const item = state.db.items[code];
