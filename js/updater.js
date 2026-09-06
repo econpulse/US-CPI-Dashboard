@@ -89,7 +89,7 @@ window.CPI_UPDATER = (function () {
     }
 
     let customDb = await loadFromStorage();
-    if (customDb) {
+    if (customDb && customDb.dates && customDb.dates.length > 0 && customDb.items && customDb.series) {
       // Auto-migrate: check if cached database is missing weights or contributions
       const defaultItems = window.CPI_DATABASE_DEFAULT ? window.CPI_DATABASE_DEFAULT.items : null;
       if (defaultItems) {
@@ -124,7 +124,7 @@ window.CPI_UPDATER = (function () {
       console.log('Loaded custom CPI database from IndexedDB (Updated:', customDb.last_updated, ')');
       window.CPI_STATE.db = customDb;
     } else {
-      window.CPI_STATE.db = window.CPI_DATABASE_DEFAULT;
+      window.CPI_STATE.db = window.CPI_DATABASE_DEFAULT || window.CPI_DATABASE;
     }
 
     updateDataSourceBadge();

@@ -313,7 +313,8 @@ def build_database():
         vals = []
         for i in range(start_idx, date_to_idx[last_d] + 1):
             d = sorted_dates[i]
-            vals.append(obs_map.get(d, None))
+            v = obs_map.get(d, None)
+            vals.append(round(v, 3) if v is not None else None)
 
         n = len(vals)
         yoy = [None] * n
@@ -359,11 +360,6 @@ def build_database():
             'title': s_info['title'],
             's_idx': start_idx,
             'vals': vals,
-            'yoy': yoy,
-            'mom': mom,
-            'ann3m': ann3m,
-            'ann6m': ann6m,
-            'contrib': contrib,
             'stats': {
                 'latest_date': last_d,
                 'latest_val': latest_val,
@@ -408,10 +404,40 @@ def build_database():
         f.write('// US CPI Macro Database - Auto-generated from raw BLS data\n')
         f.write('window.CPI_DATABASE = ')
         json.dump(output_data, f, separators=(',', ':'))
-        f.write(';\n')
+        f.write(';\n\n')
+        f.write('''// Fast metric hydration for full backward compatibility
+(function() {
+  const db = window.CPI_DATABASE;
+  if (!db || !db.series) return;
+  for (const s of Object.values(db.series)) {
+    const vals = s.vals;
+    const n = vals.length;
+    const yoy = new Array(n).fill(null);
+    const mom = new Array(n).fill(null);
+    const ann3m = new Array(n).fill(null);
+    const ann6m = new Array(n).fill(null);
+    for (let i = 0; i < n; i++) {
+      const v = vals[i];
+      if (v === null || v <= 0) continue;
+      if (i >= 1 && vals[i-1] !== null && vals[i-1] > 0) mom[i] = Math.round(((v - vals[i-1]) / vals[i-1]) * 10000) / 100;
+      if (i >= 3 && vals[i-3] !== null && vals[i-3] > 0) ann3m[i] = Math.round((Math.pow(v / vals[i-3], 4) - 1) * 10000) / 100;
+      if (i >= 6 && vals[i-6] !== null && vals[i-6] > 0) ann6m[i] = Math.round((Math.pow(v / vals[i-6], 2) - 1) * 10000) / 100;
+      if (i >= 12 && vals[i-12] !== null && vals[i-12] > 0) yoy[i] = Math.round(((v - vals[i-12]) / vals[i-12]) * 10000) / 100;
+    }
+    s.yoy = yoy;
+    s.mom = mom;
+    s.ann3m = ann3m;
+    s.ann6m = ann6m;
+    const item = db.items[s.item];
+    const w = item ? item.weight_u : null;
+    s.contrib = (w !== null && w !== undefined) ? yoy.map(y => y !== null ? Math.round((w * y) / 100 * 100) / 100 : null) : new Array(n).fill(null);
+  }
+})();
+''')
 
     file_size_mb = os.path.getsize(output_file) / 1024 / 1024
     print(f"Success! Generated {output_file} ({file_size_mb:.2f} MB).")
+
 
 if __name__ == '__main__':
     build_database()
