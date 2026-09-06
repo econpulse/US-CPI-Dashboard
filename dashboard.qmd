@@ -22,6 +22,22 @@ format:
               display: block;
             }
           </style>
+resources:
+  - "index.html"
+  - "styles.css"
+  - "chart.min.js"
+  - "cpi_data.js"
+  - "app.js"
+  - "js/*"
+  - "js/state.js"
+  - "js/updater.js"
+  - "js/overview.js"
+  - "js/drilldown.js"
+  - "js/timeseries.js"
+  - "js/heatmap.js"
+  - "js/themes.js"
+  - "js/special.js"
+  - "js/regions.js"
 ---
 
 ```{=html}
