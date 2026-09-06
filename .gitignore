@@ -6,3 +6,6 @@ dashboard.html
 dashboard_files/
 _site/
 .quarto/
+
+/.quarto/
+**/*.quarto_ipynb

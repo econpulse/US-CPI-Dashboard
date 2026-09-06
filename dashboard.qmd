@@ -1,29 +1,26 @@
 ---
-title: "US CPI Macro Dashboard"
+title: "US CPI Macro Analysis Dashboard"
 format:
   html:
     page-layout: custom
     theme: none
+    title-block-style: none
+    css: styles.css
     include-in-header:
       - text: |
-          <style>
-            html, body {
-              margin: 0;
-              padding: 0;
-              width: 100%;
-              height: 100%;
-              overflow: hidden;
-              background: #0b0f19;
-            }
-            .dashboard-frame {
-              width: 100%;
-              height: 100vh;
-              border: none;
-              display: block;
-            }
-          </style>
+          <script src="chart.min.js"></script>
+          <script src="cpi_data.js"></script>
+          <script src="js/state.js"></script>
+          <script src="js/updater.js"></script>
+          <script src="js/overview.js"></script>
+          <script src="js/drilldown.js"></script>
+          <script src="js/timeseries.js"></script>
+          <script src="js/heatmap.js"></script>
+          <script src="js/themes.js"></script>
+          <script src="js/special.js"></script>
+          <script src="js/regions.js"></script>
+          <script src="app.js"></script>
 resources:
-  - "index.html"
   - "styles.css"
   - "chart.min.js"
   - "cpi_data.js"
@@ -41,5 +38,892 @@ resources:
 ---
 
 ```{=html}
-<iframe class="dashboard-frame" src="index.html"></iframe>
+<!-- App Header -->
+  <header class="app-header">
+    <div class="brand-section">
+      <div class="brand-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+          <polyline points="17 6 23 6 23 12"></polyline>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-title">US CPI Macro Dashboard</div>
+        <div class="brand-subtitle">Bureau of Labor Statistics • Hierarchical Inflation Analysis</div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+      <button class="nav-tab active" data-tab="overview">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"></rect>
+          <rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect>
+          <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+        Overview
+      </button>
+      <button class="nav-tab" data-tab="drilldown">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+        </svg>
+        Hierarchical Drilldown
+      </button>
+      <button class="nav-tab" data-tab="timeseries">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="20" x2="18" y2="10"></line>
+          <line x1="12" y1="20" x2="12" y2="4"></line>
+          <line x1="6" y1="20" x2="6" y2="14"></line>
+        </svg>
+        Time Series Studio
+      </button>
+      <button class="nav-tab" data-tab="heatmap">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="3" y1="9" x2="21" y2="9"></line>
+          <line x1="3" y1="15" x2="21" y2="15"></line>
+          <line x1="9" y1="3" x2="9" y2="21"></line>
+          <line x1="15" y1="3" x2="15" y2="21"></line>
+        </svg>
+        Heatmap & Matrix
+      </button>
+      <button class="nav-tab" data-tab="themes">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        Macro Themes
+      </button>
+      <button class="nav-tab" data-tab="special">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+        </svg>
+        Special Aggregates
+      </button>
+      <button class="nav-tab" data-tab="regions">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+        </svg>
+        Regional CPI
+      </button>
+    </nav>
+
+    <!-- Header Actions & Release Badge -->
+    <div class="header-actions">
+      <div class="badge badge-primary" id="badge-latest-date">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        <span>Latest: <strong id="header-latest-month">--</strong></span>
+      </div>
+      <div id="badge-data-source" class="badge badge-subtle cursor-pointer" title="Click to manage CPI dataset">
+        <span>Bundled Base</span>
+      </div>
+      <button class="btn btn-secondary btn-sm" id="btn-open-data-updater" style="display: flex; align-items: center; gap: 0.4rem;" title="Drop or select cu.data.0.Current to update">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        <span>Update Data</span>
+      </button>
+      <button class="btn-icon" id="btn-theme-toggle" title="Toggle Dark/Light Theme">
+        <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="app-main">
+
+    <!-- TAB 1: EXECUTIVE MACRO OVERVIEW -->
+    <section class="tab-content active" id="tab-overview">
+      
+      <!-- Headline & Key Indicators Row -->
+      <div class="grid-cards" id="overview-kpis">
+        <!-- Headline CPI -->
+        <div class="card card-hover cursor-pointer" onclick="App.navigateToDrilldown('SA0')">
+          <div class="card-header">
+            <span class="card-title">Headline CPI (All items)</span>
+            <span class="badge badge-primary">SA</span>
+          </div>
+          <div class="card-value" id="kpi-headline-yoy">--%</div>
+          <div class="card-meta">
+            <span>MoM: <strong id="kpi-headline-mom">--%</strong></span>
+            <span>3M Ann: <strong id="kpi-headline-ann3m">--%</strong></span>
+          </div>
+          <canvas class="sparkline-canvas" id="spark-headline"></canvas>
+        </div>
+
+        <!-- Core CPI -->
+        <div class="card card-hover cursor-pointer" onclick="App.navigateToDrilldown('SA0L1E')">
+          <div class="card-header">
+            <span class="card-title">Core CPI (Ex Food & Energy)</span>
+            <span class="badge badge-primary">SA</span>
+          </div>
+          <div class="card-value" id="kpi-core-yoy">--%</div>
+          <div class="card-meta">
+            <span>MoM: <strong id="kpi-core-mom">--%</strong></span>
+            <span>3M Ann: <strong id="kpi-core-ann3m">--%</strong></span>
+          </div>
+          <canvas class="sparkline-canvas" id="spark-core"></canvas>
+        </div>
+
+        <!-- Shelter / Housing -->
+        <div class="card card-hover cursor-pointer" onclick="App.navigateToDrilldown('SAH1')">
+          <div class="card-header">
+            <span class="card-title">Shelter</span>
+            <span class="badge badge-primary">SA</span>
+          </div>
+          <div class="card-value" id="kpi-shelter-yoy">--%</div>
+          <div class="card-meta">
+            <span>MoM: <strong id="kpi-shelter-mom">--%</strong></span>
+            <span>3M Ann: <strong id="kpi-shelter-ann3m">--%</strong></span>
+          </div>
+          <canvas class="sparkline-canvas" id="spark-shelter"></canvas>
+        </div>
+
+        <!-- Supercore / Core Services Ex Shelter -->
+        <div class="card card-hover cursor-pointer" onclick="App.navigateToDrilldown('SASLE')">
+          <div class="card-header">
+            <span class="card-title">Supercore (Services Ex Energy)</span>
+            <span class="badge badge-primary">SA</span>
+          </div>
+          <div class="card-value" id="kpi-supercore-yoy">--%</div>
+          <div class="card-meta">
+            <span>MoM: <strong id="kpi-supercore-mom">--%</strong></span>
+            <span>3M Ann: <strong id="kpi-supercore-ann3m">--%</strong></span>
+          </div>
+          <canvas class="sparkline-canvas" id="spark-supercore"></canvas>
+        </div>
+
+        <!-- Energy -->
+        <div class="card card-hover cursor-pointer" onclick="App.navigateToDrilldown('SA0E')">
+          <div class="card-header">
+            <span class="card-title">Energy</span>
+            <span class="badge badge-primary">SA</span>
+          </div>
+          <div class="card-value" id="kpi-energy-yoy">--%</div>
+          <div class="card-meta">
+            <span>MoM: <strong id="kpi-energy-mom">--%</strong></span>
+            <span>3M Ann: <strong id="kpi-energy-ann3m">--%</strong></span>
+          </div>
+          <canvas class="sparkline-canvas" id="spark-energy"></canvas>
+        </div>
+
+        <!-- Food -->
+        <div class="card card-hover cursor-pointer" onclick="App.navigateToDrilldown('SAF1')">
+          <div class="card-header">
+            <span class="card-title">Food</span>
+            <span class="badge badge-primary">SA</span>
+          </div>
+          <div class="card-value" id="kpi-food-yoy">--%</div>
+          <div class="card-meta">
+            <span>MoM: <strong id="kpi-food-mom">--%</strong></span>
+            <span>3M Ann: <strong id="kpi-food-ann3m">--%</strong></span>
+          </div>
+          <canvas class="sparkline-canvas" id="spark-food"></canvas>
+        </div>
+      </div>
+
+      <!-- Overview Charts Row (Trajectory & Momentum Barometer) -->
+      <div class="grid-2">
+        <!-- Trajectory Chart -->
+        <div class="card">
+          <div class="chart-header">
+            <div class="chart-title-group">
+              <h3>US Inflation Trajectory (YoY %)</h3>
+              <p>Headline CPI vs Core CPI vs Fed 2.0% Target with US Recessions</p>
+            </div>
+            <div class="btn-toggle-group" id="toggle-overview-range">
+              <button class="btn-toggle" data-years="1">1Y</button>
+              <button class="btn-toggle active" data-years="3">3Y</button>
+              <button class="btn-toggle" data-years="5">5Y</button>
+              <button class="btn-toggle" data-years="10">10Y</button>
+              <button class="btn-toggle" data-years="all">Max</button>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="chart-overview-trajectory"></canvas>
+          </div>
+        </div>
+
+        <!-- Momentum Barometer -->
+        <div class="card">
+          <div class="chart-header">
+            <div class="chart-title-group">
+              <h3>Inflation Momentum Barometer</h3>
+              <p>12-Month YoY Rate vs 3-Month Annualized Momentum across Big 8 Categories (Ordered by BLS Sort-Sequence)</p>
+            </div>
+            <span class="badge badge-warning">Momentum Check</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="chart-overview-momentum"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- The Big 8 Major Expenditure Categories Grid -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <div class="chart-title-group">
+            <h3>The 8 Major CPI Expenditure Categories</h3>
+            <p>Ordered by BLS Sort-Sequence • Click any category to drill down into its subcomponents</p>
+          </div>
+        </div>
+        <div class="grid-cards" id="overview-major8-grid" style="margin-bottom: 0;">
+          <!-- Rendered dynamically by app.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: HIERARCHICAL DRILLDOWN EXPLORER -->
+    <section class="tab-content" id="tab-drilldown">
+      
+      <!-- Search & Breadcrumb Bar -->
+      <div class="flex-between gap-3 mb-3 flex-wrap">
+        <div class="search-container">
+          <input type="text" class="form-input w-full" id="drilldown-search" placeholder="🔍 Search any CPI component or code (e.g. Meats, Eggs, Used cars, Rent, Gasoline)..." autocomplete="off">
+          <div class="search-results" id="search-results-dropdown"></div>
+        </div>
+
+        <div class="controls-group">
+          <button class="btn-toggle" id="btn-toggle-tree-panel" onclick="App.toggleTreeNavigator()" style="background: var(--bg-card); border: 1px solid var(--border-color); color: var(--accent-blue);">
+            🌳 Toggle Hierarchy Tree
+          </button>
+          <label style="font-size: 0.8rem; color: var(--text-secondary);">Seasonality:</label>
+          <div class="btn-toggle-group" id="drilldown-seas-toggle">
+            <button class="btn-toggle active" data-seas="S">Adjusted (SA)</button>
+            <button class="btn-toggle" data-seas="U">Unadjusted (NSA)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Collapsible Tree Explorer Panel -->
+      <div id="tree-navigator-panel" class="card mb-3" style="display: none;">
+        <div class="flex-between mb-2">
+          <div class="chart-title-group">
+            <h4 style="font-size: 0.95rem; font-weight: 600;">Full CPI Hierarchy Tree (Ordered by Sort-Sequence)</h4>
+            <p style="font-size: 0.75rem; color: var(--text-muted);">Expand categories to inspect subcomponents down to Level 8. Click any node to open it.</p>
+          </div>
+          <button class="btn-toggle" onclick="App.toggleTreeNavigator()" style="font-size: 0.75rem;">Close ✕</button>
+        </div>
+        <div class="tree-navigator" id="full-tree-container">
+          <!-- Rendered dynamically by app.js -->
+        </div>
+      </div>
+
+      <!-- Breadcrumbs Path -->
+      <div class="breadcrumbs-bar" id="drilldown-breadcrumbs">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Current Selected Item Header Card -->
+      <div class="card mb-4" id="drilldown-item-card" onclick="App.selectChartSeries(App.getCurrentDrilldownCode())" style="cursor: pointer;" title="Klicken, um übergeordnete Zeitreihe im Chart anzuzeigen">
+        <div class="flex-between flex-wrap gap-3">
+          <div>
+            <div class="flex-center gap-2 mb-2" style="justify-content: flex-start;">
+              <span class="level-badge" id="drilldown-item-seq">Seq #1</span>
+              <span class="level-badge" id="drilldown-item-level">Level 0</span>
+              <span class="badge badge-primary font-mono" id="drilldown-item-code">SA0</span>
+              <span id="drilldown-item-category-type" class="badge badge-warning">Headline</span>
+            </div>
+            <h2 id="drilldown-item-name" style="font-size: 1.5rem; font-weight: 700;">All items</h2>
+            <p id="drilldown-item-title" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.2rem;">All items in U.S. city average, all urban consumers</p>
+          </div>
+          <div style="display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap;">
+            <div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">YoY Inflation</div>
+              <div id="drilldown-val-yoy" style="font-size: 1.6rem; font-weight: 700;">--%</div>
+            </div>
+            <div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">Basket Weight</div>
+              <div id="drilldown-val-weight" style="font-size: 1.3rem; font-weight: 600; font-family: monospace;">--%</div>
+            </div>
+            <div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">YoY Contribution</div>
+              <div id="drilldown-val-contrib" style="font-size: 1.3rem; font-weight: 600; color: #c084fc;">-- pp</div>
+            </div>
+            <div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">MoM Change</div>
+              <div id="drilldown-val-mom" style="font-size: 1.3rem; font-weight: 600;">--%</div>
+            </div>
+            <div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">3M Annualized</div>
+              <div id="drilldown-val-ann3m" style="font-size: 1.3rem; font-weight: 600;">--%</div>
+            </div>
+            <div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">Index Value</div>
+              <div id="drilldown-val-index" style="font-size: 1.3rem; font-weight: 600; font-family: monospace;">--</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Drilldown Sub-Components & Time Series Chart -->
+      <div class="grid-2">
+        <!-- Sub-Components Breakdown Table -->
+        <div class="card">
+          <div class="chart-header">
+            <div class="chart-title-group">
+              <h3 id="drilldown-children-title">Direct Sub-Components</h3>
+              <p>Klick auf Zeile lädt Zeitreihe in Chart • Drilldown öffnet Unterebene</p>
+            </div>
+            <span class="badge badge-primary" id="drilldown-children-count">0 items</span>
+          </div>
+          <div class="table-responsive" style="max-height: 480px; overflow-y: auto;">
+            <table class="cpi-table" id="drilldown-table">
+              <thead>
+                <tr>
+                  <th onclick="App.sortDrilldownTable('seq')" title="Sort by BLS Sort Sequence">
+                    Seq <span id="sort-indicator-seq" class="sort-indicator">▲</span>
+                  </th>
+                  <th onclick="App.sortDrilldownTable('name')" title="Sort by Component Name">
+                    Component <span id="sort-indicator-name" class="sort-indicator"></span>
+                  </th>
+                  <th onclick="App.sortDrilldownTable('weight')" title="Sort by Basket Weight %">
+                    Weight <span id="sort-indicator-weight" class="sort-indicator"></span>
+                  </th>
+                  <th onclick="App.sortDrilldownTable('yoy')" title="Sort by YoY %">
+                    YoY % <span id="sort-indicator-yoy" class="sort-indicator"></span>
+                  </th>
+                  <th onclick="App.sortDrilldownTable('contrib')" title="Sort by Contribution to YoY Inflation in Percentage Points">
+                    Contrib <span id="sort-indicator-contrib" class="sort-indicator"></span>
+                  </th>
+                  <th onclick="App.sortDrilldownTable('mom')" title="Sort by MoM %">
+                    MoM % <span id="sort-indicator-mom" class="sort-indicator"></span>
+                  </th>
+                  <th onclick="App.sortDrilldownTable('ann3m')" title="Sort by 3-Month Annualized %">
+                    3M Ann <span id="sort-indicator-ann3m" class="sort-indicator"></span>
+                  </th>
+                  <th class="sparkline-col">Sparkline</th>
+                  <th class="action-col" style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="drilldown-table-body">
+                <!-- Dynamic rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Component Time Series Chart -->
+        <div class="card">
+          <div class="chart-header">
+            <div class="chart-title-group">
+              <h3 id="drilldown-chart-title">Historical Time Series</h3>
+              <p id="drilldown-chart-subtitle">Component trend over time</p>
+            </div>
+            <div class="controls-group">
+              <!-- Timeframe Selector (Default 3Y) -->
+              <div class="btn-toggle-group" id="drilldown-range-toggle">
+                <button class="btn-toggle" data-years="1">1Y</button>
+                <button class="btn-toggle active" data-years="3">3Y</button>
+                <button class="btn-toggle" data-years="5">5Y</button>
+                <button class="btn-toggle" data-years="10">10Y</button>
+                <button class="btn-toggle" data-years="all">Max</button>
+              </div>
+
+              <!-- Metric Toggle -->
+              <div class="btn-toggle-group" id="drilldown-metric-toggle">
+                <button class="btn-toggle active" data-metric="yoy">YoY %</button>
+                <button class="btn-toggle" data-metric="contrib" id="btn-drill-metric-contrib">YoY Contrib (pp)</button>
+                <button class="btn-toggle" data-metric="mom">MoM %</button>
+                <button class="btn-toggle" data-metric="ann3m">3M Ann</button>
+                <button class="btn-toggle" data-metric="vals">Index</button>
+              </div>
+            </div>
+          </div>
+          <div class="chart-container" style="height: 440px;">
+            <canvas id="chart-drilldown-series"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: TIME SERIES STUDIO -->
+    <section class="tab-content" id="tab-timeseries">
+      <div class="card mb-4">
+        <div class="chart-header">
+          <div class="chart-title-group">
+            <h3>Multi-Series Comparison Studio</h3>
+            <p>Select multiple CPI series to compare trends, turning points, and inflation dynamics</p>
+          </div>
+
+          <!-- Quick Preset Baskets -->
+          <div class="controls-group">
+            <span style="font-size: 0.8rem; color: var(--text-secondary);">Presets:</span>
+            <select class="form-select" id="studio-preset-select" onchange="App.applyStudioPreset(this.value)">
+              <option value="custom">-- Select a Preset Basket --</option>
+              <option value="headline_core_supercore">Headline vs Core vs Supercore</option>
+              <option value="goods_vs_services">Goods (Commodities) vs Services</option>
+              <option value="shelter_dynamics">Shelter: Rent vs Owners' Equivalent Rent (OER)</option>
+              <option value="food_categories">Food: Meats/Poultry/Fish/Eggs vs Fruits vs Dairy</option>
+              <option value="energy_auto">Energy & Autos (Gasoline, New, Used Cars, Airfare)</option>
+              <option value="food_at_home_away">Food at Home vs Food Away from Home</option>
+              <option value="big8_all">All 8 Major Expenditure Categories (Sort-Sequence)</option>
+              <option value="special_core_variants">Special Core Variants (Core, Ex-Energy, Ex-Shelter, Ex-Used Cars)</option>
+              <option value="special_goods_services">Commodities vs Services vs Durables vs Nondurables</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Studio Controls Bar -->
+        <div class="flex-between gap-3 flex-wrap mb-3" style="background: var(--bg-card); padding: 0.75rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <div class="controls-group">
+            <label style="font-size: 0.8rem; color: var(--text-secondary);">Metric:</label>
+            <div class="btn-toggle-group" id="studio-metric-toggle">
+              <button class="btn-toggle active" data-metric="yoy">YoY %</button>
+              <button class="btn-toggle" data-metric="contrib">YoY Contrib (pp)</button>
+              <button class="btn-toggle" data-metric="mom">MoM %</button>
+              <button class="btn-toggle" data-metric="ann3m">3M Ann %</button>
+              <button class="btn-toggle" data-metric="vals">Index Level</button>
+              <button class="btn-toggle" data-metric="rebased">Rebase (100)</button>
+            </div>
+          </div>
+
+          <div class="controls-group">
+            <label style="font-size: 0.8rem; color: var(--text-secondary);">Timeframe:</label>
+            <div class="btn-toggle-group" id="studio-range-toggle">
+              <button class="btn-toggle" data-years="1">1Y</button>
+              <button class="btn-toggle active" data-years="3">3Y</button>
+              <button class="btn-toggle" data-years="5">5Y</button>
+              <button class="btn-toggle" data-years="10">10Y</button>
+              <button class="btn-toggle" data-years="all">Max (1997-2026)</button>
+            </div>
+          </div>
+
+          <div class="controls-group">
+            <label style="font-size: 0.8rem; color: var(--text-secondary);">Seasonality:</label>
+            <div class="btn-toggle-group" id="studio-seas-toggle">
+              <button class="btn-toggle active" data-seas="S">Adjusted (SA)</button>
+              <button class="btn-toggle" data-seas="U">Unadjusted (NSA)</button>
+            </div>
+          </div>
+
+          <button class="btn-toggle" style="background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--accent-blue);" onclick="App.exportStudioCSV()">
+            📥 Export CSV
+          </button>
+        </div>
+
+        <!-- Series Picker Search & Active Tags -->
+        <div class="mb-3">
+          <div class="search-container" style="max-width: 100%;">
+            <input type="text" class="form-input w-full" id="studio-add-series-input" placeholder="+ Add series to chart (e.g. Meats, Eggs, Energy, Airline fares, Apparel)...">
+            <div class="search-results" id="studio-search-results"></div>
+          </div>
+          <div class="tags-container" id="studio-active-tags">
+            <!-- Active Series Pills -->
+          </div>
+        </div>
+
+        <!-- Studio Main Chart -->
+        <div class="chart-container" style="height: 480px;">
+          <canvas id="chart-studio-main"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: INFLATION HEATMAP & MATRIX -->
+    <section class="tab-content" id="tab-heatmap">
+      <div class="card mb-4">
+        <div class="chart-header">
+          <div class="chart-title-group">
+            <h3>US Inflation Heatmap & Matrix</h3>
+            <p>Monthly price change intensity matrix arranged strictly by BLS Sort-Sequence</p>
+          </div>
+
+          <div class="controls-group" style="flex-wrap: wrap; gap: 0.75rem;">
+            <div class="flex-center gap-2">
+              <label style="font-size: 0.8rem; color: var(--text-secondary);">Metric:</label>
+              <div class="btn-toggle-group" id="heatmap-metric-toggle">
+                <button class="btn-toggle active" data-metric="yoy">YoY %</button>
+                <button class="btn-toggle" data-metric="contrib">YoY Contrib (pp)</button>
+                <button class="btn-toggle" data-metric="mom">MoM %</button>
+              </div>
+            </div>
+
+            <div class="flex-center gap-2">
+              <label style="font-size: 0.8rem; color: var(--text-secondary);">Hierarchy Level:</label>
+              <div class="btn-toggle-group" id="heatmap-level-toggle">
+                <button class="btn-toggle active" data-level="1" title="Hauptgruppen: Headline, 8 Hauptkategorien & Kern-Aggregate (Level 0-1)">Main Groups (L0-1)</button>
+                <button class="btn-toggle" data-level="2" title="Bis Ebene 2 (z.B. Food at Home, Shelter, Fuels, Vehicles)">Level 2</button>
+                <button class="btn-toggle" data-level="3" title="Bis Ebene 3 (z.B. Meats, Rent, Gasoline, Airfare)">Level 3</button>
+                <button class="btn-toggle" data-level="all" title="Alle Detailpositionen (L0-8)">All Levels</button>
+              </div>
+            </div>
+
+            <div class="flex-center gap-2">
+              <label style="font-size: 0.8rem; color: var(--text-secondary);">History:</label>
+              <div class="btn-toggle-group" id="heatmap-months-toggle">
+                <button class="btn-toggle" data-months="12">12M</button>
+                <button class="btn-toggle active" data-months="24">24M</button>
+                <button class="btn-toggle" data-months="36">36M</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Heatmap Color Legend -->
+        <div class="flex-between gap-3 mb-3 flex-wrap" style="font-size: 0.75rem; color: var(--text-secondary);">
+          <div class="flex-center gap-2" id="heatmap-legend">
+            <span>Deflation / Cool:</span>
+            <span style="display:inline-block; width:16px; height:16px; background:#0284c7; border-radius:3px;"></span> &lt; 0%
+            <span style="display:inline-block; width:16px; height:16px; background:#059669; border-radius:3px;"></span> 0% - 2%
+            <span style="display:inline-block; width:16px; height:16px; background:#ca8a04; border-radius:3px;"></span> 2% - 3.5%
+            <span style="display:inline-block; width:16px; height:16px; background:#ea580c; border-radius:3px;"></span> 3.5% - 5%
+            <span style="display:inline-block; width:16px; height:16px; background:#dc2626; border-radius:3px;"></span> &gt; 5% Hot
+          </div>
+
+          <div>
+            <input type="text" class="form-input" id="heatmap-filter-input" placeholder="Filter rows..." style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" oninput="App.filterHeatmapRows(this.value)">
+          </div>
+        </div>
+
+        <!-- Heatmap Table Container -->
+        <div class="table-responsive" style="max-height: 560px; overflow-y: auto;">
+          <table class="heatmap-table" id="heatmap-grid-table">
+            <thead id="heatmap-table-head">
+              <!-- Rendered by JS -->
+            </thead>
+            <tbody id="heatmap-table-body">
+              <!-- Rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: MACRO THEMES -->
+    <section class="tab-content" id="tab-themes">
+      <!-- Theme Controls Header -->
+      <div class="flex-between gap-3 mb-3 flex-wrap" style="background: var(--bg-secondary); padding: 0.75rem 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+        <div class="chart-title-group">
+          <h4 style="font-size: 0.95rem; font-weight: 600;">Macroeconomic Deep-Dives</h4>
+          <p style="font-size: 0.75rem; color: var(--text-muted);">Key inflation drivers, market sub-baskets, and policy indicators</p>
+        </div>
+        <div class="controls-group">
+          <label style="font-size: 0.8rem; color: var(--text-secondary);">Timeframe:</label>
+          <div class="btn-toggle-group" id="theme-range-toggle">
+            <button class="btn-toggle" data-years="1">1Y</button>
+            <button class="btn-toggle active" data-years="3">3Y</button>
+            <button class="btn-toggle" data-years="5">5Y</button>
+            <button class="btn-toggle" data-years="10">10Y</button>
+            <button class="btn-toggle" data-years="all">Max</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- Shelter Dynamics -->
+        <div class="card">
+          <div class="chart-header">
+            <div class="chart-title-group">
+              <h3>Shelter & Rent Dynamics</h3>
+              <p>Rent of Primary Residence (`SEHA`) vs Owners' Equivalent Rent (`SEHC`)</p>
+            </div>
+            <span class="badge badge-primary font-mono">SAH1</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="chart-theme-shelter"></canvas>
+          </div>
+        </div>
+
+        <!-- Supercore Services -->
+        <div class="card">
+          <div class="chart-header">
+            <div class="chart-title-group">
+              <h3>Supercore Inflation (Core Services Ex Housing)</h3>
+              <p>The Fed's key wage-sensitive indicator (`SASLE` vs Headline `SA0`)</p>
+            </div>
+            <span class="badge badge-warning">Fed Watch</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="chart-theme-supercore"></canvas>
+          </div>
+        </div>
+
+        <!-- Goods vs Services -->
+        <div class="card">
+          <div class="chart-header">
+            <div class="chart-title-group">
+              <h3>Commodities (Goods) vs Services</h3>
+              <p>Divergence between Core Goods (`SACL1E`) and Services (`SAS`)</p>
+            </div>
+            <span class="badge badge-primary">Goods / Services</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="chart-theme-goods-services"></canvas>
+          </div>
+        </div>
+
+        <!-- Food & Energy Volatility -->
+        <div class="card">
+          <div class="chart-header">
+            <div class="chart-title-group">
+              <h3>Food & Energy Breakdown</h3>
+              <p>Food at Home (`SAF11`) vs Food Away (`SAF12`) vs Gasoline (`SETB01`)</p>
+            </div>
+            <span class="badge badge-warning">Volatile Baskets</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="chart-theme-food-energy"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 6: SPECIAL AGGREGATES EXPLORER -->
+    <section class="tab-content" id="tab-special">
+      <!-- Special Aggregates Controls & Preset Bar -->
+      <div class="card mb-4">
+        <div class="flex-between flex-wrap gap-3 mb-3">
+          <div class="chart-title-group">
+            <h3>Special Analytical Aggregates Explorer</h3>
+            <p>Explore BLS synthetic aggregates, exclusion series (Ex-Food, Ex-Energy, Supercore), and special combinations</p>
+          </div>
+          <div class="controls-group">
+            <label style="font-size: 0.8rem; color: var(--text-secondary);">Seasonality:</label>
+            <div class="btn-toggle-group" id="special-seas-toggle">
+              <button class="btn-toggle active" data-seas="S">Adjusted (SA)</button>
+              <button class="btn-toggle" data-seas="U">Unadjusted (NSA)</button>
+            </div>
+            <label style="font-size: 0.8rem; color: var(--text-secondary); margin-left: 0.5rem;">Metric:</label>
+            <div class="btn-toggle-group" id="special-metric-toggle">
+              <button class="btn-toggle active" data-metric="yoy">YoY %</button>
+              <button class="btn-toggle" data-metric="contrib" id="btn-special-metric-contrib">YoY Contrib (pp)</button>
+              <button class="btn-toggle" data-metric="mom">MoM %</button>
+              <button class="btn-toggle" data-metric="ann3m">3M Ann %</button>
+              <button class="btn-toggle" data-metric="vals">Index</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter Presets / Categories -->
+        <div class="flex-between flex-wrap gap-2">
+          <div class="btn-toggle-group" id="special-category-filter">
+            <button class="btn-toggle active" data-cat="all">All Special Aggregates (<span id="special-count-all">0</span>)</button>
+            <button class="btn-toggle" data-cat="core_exclusion">Core & Exclusions</button>
+            <button class="btn-toggle" data-cat="goods_services">Goods & Services</button>
+            <button class="btn-toggle" data-cat="energy_commodities">Energy & Commodities</button>
+            <button class="btn-toggle" data-cat="services_sub">Services Aggregates</button>
+          </div>
+          <div class="search-container" style="max-width: 320px;">
+            <input type="text" class="form-input w-full" id="special-search" placeholder="🔍 Search Special Aggregates..." autocomplete="off">
+          </div>
+        </div>
+      </div>
+
+      <!-- Split Layout: Interactive Table & Time Series Chart -->
+      <div class="grid-2">
+        <!-- Special Aggregates Table -->
+        <div class="card">
+          <div class="chart-header">
+            <div class="chart-title-group">
+              <h3 id="special-table-title">Special Aggregates List</h3>
+              <p>Ordered by BLS Sort-Sequence • Click row to plot in chart view</p>
+            </div>
+            <span class="badge badge-primary font-mono" id="special-active-count">0 items</span>
+          </div>
+          <div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
+            <table class="cpi-table" id="special-table">
+              <thead>
+                <tr>
+                  <th onclick="App.sortSpecialTable('seq')" title="Sort by BLS Sort Sequence">
+                    Seq <span id="sort-indicator-special-seq" class="sort-indicator">▲</span>
+                  </th>
+                  <th onclick="App.sortSpecialTable('name')" title="Sort by Aggregate Name">
+                    Aggregate Name <span id="sort-indicator-special-name" class="sort-indicator"></span>
+                  </th>
+                  <th onclick="App.sortSpecialTable('weight')" title="Sort by Basket Weight %">
+                    Weight <span id="sort-indicator-special-weight" class="sort-indicator"></span>
+                  </th>
+                  <th onclick="App.sortSpecialTable('yoy')" title="Sort by YoY %">
+                    YoY % <span id="sort-indicator-special-yoy" class="sort-indicator"></span>
+                  </th>
+                  <th onclick="App.sortSpecialTable('contrib')" title="Sort by Contribution to Headline YoY in pp">
+                    Contrib <span id="sort-indicator-special-contrib" class="sort-indicator"></span>
+                  </th>
+                  <th onclick="App.sortSpecialTable('mom')" title="Sort by MoM %">
+                    MoM % <span id="sort-indicator-special-mom" class="sort-indicator"></span>
+                  </th>
+                  <th onclick="App.sortSpecialTable('ann3m')" title="Sort by 3M Ann %">
+                    3M Ann % <span id="sort-indicator-special-ann3m" class="sort-indicator"></span>
+                  </th>
+                  <th class="sparkline-col">Trend (24M)</th>
+                </tr>
+              </thead>
+              <tbody id="special-table-body">
+                <!-- Rendered dynamically by app.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Special Aggregate Chart & Stats Card -->
+        <div class="card">
+          <div class="chart-header">
+            <div class="chart-title-group">
+              <h3 id="special-chart-title">Special Aggregate Time Series</h3>
+              <p id="special-chart-subtitle">Select an aggregate from the table on the left</p>
+            </div>
+            <div class="btn-toggle-group" id="special-range-toggle">
+              <button class="btn-toggle" data-years="1">1Y</button>
+              <button class="btn-toggle active" data-years="3">3Y</button>
+              <button class="btn-toggle" data-years="5">5Y</button>
+              <button class="btn-toggle" data-years="10">10Y</button>
+              <button class="btn-toggle" data-years="all">Max</button>
+            </div>
+          </div>
+          <div class="chart-container" style="height: 380px;">
+            <canvas id="chart-special-main"></canvas>
+          </div>
+          <div class="card-meta mt-3" style="display: flex; justify-content: space-between; border-top: 1px solid var(--border-subtle); padding-top: 0.75rem;">
+            <span>Series Code: <strong id="special-meta-code" class="font-mono">--</strong></span>
+            <span>BLS Sequence: <strong id="special-meta-seq" class="font-mono">--</strong></span>
+            <span>Latest Level: <strong id="special-meta-val" class="font-mono">--</strong></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 7: REGIONAL CPI -->
+    <section class="tab-content" id="tab-regions">
+      <div class="card mb-4">
+        <div class="chart-header">
+          <div class="chart-title-group">
+            <h3>US Regional Inflation Comparison</h3>
+            <p>Headline CPI YoY % across the 4 major Census Regions (Northeast, Midwest, South, West)</p>
+          </div>
+          <div class="btn-toggle-group" id="region-range-toggle">
+            <button class="btn-toggle" data-years="1">1Y</button>
+            <button class="btn-toggle active" data-years="3">3Y</button>
+            <button class="btn-toggle" data-years="5">5Y</button>
+            <button class="btn-toggle" data-years="10">10Y</button>
+            <button class="btn-toggle" data-years="all">All</button>
+          </div>
+        </div>
+        <div class="chart-container" style="height: 420px;">
+          <canvas id="chart-regions-main"></canvas>
+        </div>
+      </div>
+
+      <!-- Regional Latest Rates Table -->
+      <div class="card">
+        <div class="chart-header">
+          <div class="chart-title-group">
+            <h3>Regions & Metropolitan Areas Snapshot</h3>
+            <p>Latest CPI index values and annual inflation rates across US geographic areas</p>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="cpi-table" id="regional-table">
+            <thead>
+              <tr>
+                <th>Area Code</th>
+                <th>Geographic Area</th>
+                <th>Latest Month</th>
+                <th>YoY Inflation (%)</th>
+                <th>MoM Change (%)</th>
+                <th>Index Level</th>
+                <th>Sparkline</th>
+              </tr>
+            </thead>
+            <tbody id="regional-table-body">
+              <!-- Rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- App Footer -->
+  <footer class="app-footer">
+    <div>
+      <strong>US CPI Macro Analysis Dashboard</strong> • Built with pure HTML/JS • Zero Server Dependency
+    </div>
+    <div class="footer-links">
+      <span>Data Source: US Bureau of Labor Statistics (BLS)</span>
+      <span>•</span>
+      <span id="footer-data-timestamp">Updated: --</span>
+    </div>
+  </footer>
+
+  <!-- Global Drag & Drop Overlay -->
+  <div id="global-drag-overlay" class="global-drag-overlay">
+    <div class="global-drag-box">
+      <svg class="global-drag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="17 8 12 3 7 8"></polyline>
+        <line x1="12" y1="3" x2="12" y2="15"></line>
+      </svg>
+      <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">BLS-Datendatei hier ablegen</h2>
+      <p style="color: var(--text-secondary); font-size: 0.95rem;">Lassen Sie <code>cu.data.0.Current</code> los, um das Dashboard sofort zu aktualisieren.</p>
+    </div>
+  </div>
+
+  <!-- Data Updater Modal -->
+  <div id="modal-data-updater" class="modal-backdrop" style="display: none;">
+    <div class="modal-container">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          CPI-Datensatz aktualisieren (In-Browser)
+        </div>
+        <button class="modal-close-btn" id="modal-updater-close">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div id="updater-current-info" style="margin-bottom: 1.25rem; padding: 0.75rem 1rem; background: var(--bg-card); border-radius: var(--radius-sm); font-size: 0.85rem;">
+          <!-- Loaded dynamically -->
+        </div>
+
+        <div class="modal-drop-zone" id="modal-drop-zone" onclick="document.getElementById('file-input-updater').click()">
+          <input type="file" id="file-input-updater" style="display: none;" accept=".Current,.txt,.tsv,*">
+          <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          <div class="drop-text-main">BLS-Datendatei hier ablegen oder klicken zum Auswählen</div>
+          <div class="drop-text-sub">Unterstützt <code>cu.data.0.Current</code> direkt von bls.gov (rein browserseitige Verarbeitung)</div>
+          <button type="button" class="btn btn-secondary btn-sm" style="margin-top: 0.5rem;">
+            Datei auswählen...
+          </button>
+        </div>
+
+        <div class="progress-container" id="updater-progress-bar" style="display: none;">
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" id="updater-progress-fill"></div>
+          </div>
+          <div class="progress-status" id="updater-status-text">0% - Datei wird gelesen...</div>
+        </div>
+
+        <div id="updater-result-box" style="display: none; padding: 1rem; background: var(--bg-card); border-radius: var(--radius-md); border: 1px solid rgba(16, 185, 129, 0.3);">
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" id="btn-modal-reset-data" style="color: var(--color-up-hot); border-color: rgba(239,68,68,0.3);">
+          Auf Standarddaten zurücksetzen
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="CPI_UPDATER.closeModal()">
+          Schließen
+        </button>
+      </div>
+    </div>
+  </div>
 ```

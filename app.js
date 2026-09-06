@@ -363,7 +363,11 @@ window.App = (function () {
   };
 })();
 
-// Initialize on DOM ready
-document.addEventListener('DOMContentLoaded', () => {
+// Initialize on DOM ready or immediately if already loaded
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    window.App.init();
+  });
+} else {
   window.App.init();
-});
+}
