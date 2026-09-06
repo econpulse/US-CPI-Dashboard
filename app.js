@@ -53,19 +53,22 @@ window.App = (function () {
 
   function setupEventListeners() {
     // Theme Toggle
-    document.getElementById('btn-theme-toggle').addEventListener('click', () => {
-      state.theme = state.theme === 'dark' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', state.theme);
-      localStorage.setItem('cpi_theme', state.theme);
-      // Re-render active charts
-      window.CPI_OVERVIEW.renderOverviewTrajectoryChart();
-      window.CPI_OVERVIEW.renderOverviewMomentumChart();
-      window.CPI_DRILLDOWN.renderDrilldownChart();
-      window.CPI_TIMESERIES.renderStudioChart();
-      window.CPI_THEMES.renderThemeCharts();
-      window.CPI_SPECIAL.renderSpecialChart();
-      window.CPI_REGIONS.renderRegionChart();
-    });
+    const btnTheme = document.getElementById('btn-theme-toggle');
+    if (btnTheme) {
+      btnTheme.addEventListener('click', () => {
+        state.theme = state.theme === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', state.theme);
+        localStorage.setItem('cpi_theme', state.theme);
+        // Re-render active charts
+        window.CPI_OVERVIEW.renderOverviewTrajectoryChart();
+        window.CPI_OVERVIEW.renderOverviewMomentumChart();
+        window.CPI_DRILLDOWN.renderDrilldownChart();
+        window.CPI_TIMESERIES.renderStudioChart();
+        window.CPI_THEMES.renderThemeCharts();
+        window.CPI_SPECIAL.renderSpecialChart();
+        window.CPI_REGIONS.renderRegionChart();
+      });
+    }
 
     // Nav Tabs
     document.querySelectorAll('.nav-tab').forEach(tab => {
@@ -98,41 +101,43 @@ window.App = (function () {
     // Drilldown Search Input & Dropdown
     const drilldownSearch = document.getElementById('drilldown-search');
     const searchDropdown = document.getElementById('search-results-dropdown');
-    drilldownSearch.addEventListener('input', (e) => {
-      const q = e.target.value.trim().toLowerCase();
-      if (!q) {
-        searchDropdown.style.display = 'none';
-        return;
-      }
-      const matches = Object.values(state.db.items)
-        .filter(it => it.name.toLowerCase().includes(q) || it.code.toLowerCase().includes(q))
-        .sort((a, b) => a.seq - b.seq)
-        .slice(0, 15);
+    if (drilldownSearch && searchDropdown) {
+      drilldownSearch.addEventListener('input', (e) => {
+        const q = e.target.value.trim().toLowerCase();
+        if (!q) {
+          searchDropdown.style.display = 'none';
+          return;
+        }
+        const matches = Object.values(state.db.items)
+          .filter(it => it.name.toLowerCase().includes(q) || it.code.toLowerCase().includes(q))
+          .sort((a, b) => a.seq - b.seq)
+          .slice(0, 15);
 
-      if (matches.length === 0) {
-        searchDropdown.innerHTML = '<div style="padding: 0.75rem; color: var(--text-muted); font-size: 0.85rem;">No matching items found</div>';
-      } else {
-        searchDropdown.innerHTML = matches.map(it => {
-          const hasChildren = it.children && it.children.length > 0;
-          return `
-            <div class="search-result-item" onclick="App.navigateToDrilldown('${it.code}')">
-              <div>
-                <div class="item-title">
-                  <span class="level-badge">Seq #${it.seq}</span>
-                  <strong>${it.name}</strong>
+        if (matches.length === 0) {
+          searchDropdown.innerHTML = '<div style="padding: 0.75rem; color: var(--text-muted); font-size: 0.85rem;">No matching items found</div>';
+        } else {
+          searchDropdown.innerHTML = matches.map(it => {
+            const hasChildren = it.children && it.children.length > 0;
+            return `
+              <div class="search-result-item" onclick="App.navigateToDrilldown('${it.code}')">
+                <div>
+                  <div class="item-title">
+                    <span class="level-badge">Seq #${it.seq}</span>
+                    <strong>${it.name}</strong>
+                  </div>
+                  <div class="item-path">Level ${it.level} • Code: <code>${it.code}</code> • ${hasChildren ? `${it.children.length} sub-items` : 'Leaf Item'}</div>
                 </div>
-                <div class="item-path">Level ${it.level} • Code: <code>${it.code}</code> • ${hasChildren ? `${it.children.length} sub-items` : 'Leaf Item'}</div>
+                <span class="badge badge-primary">${hasChildren ? 'Drill Down ›' : 'Select'}</span>
               </div>
-              <span class="badge badge-primary">${hasChildren ? 'Drill Down ›' : 'Select'}</span>
-            </div>
-          `;
-        }).join('');
-      }
-      searchDropdown.style.display = 'block';
-    });
+            `;
+          }).join('');
+        }
+        searchDropdown.style.display = 'block';
+      });
+    }
 
     document.addEventListener('click', (e) => {
-      if (!drilldownSearch.contains(e.target) && !searchDropdown.contains(e.target)) {
+      if (drilldownSearch && searchDropdown && !drilldownSearch.contains(e.target) && !searchDropdown.contains(e.target)) {
         searchDropdown.style.display = 'none';
       }
       const studioInput = document.getElementById('studio-add-series-input');
@@ -195,35 +200,37 @@ window.App = (function () {
     // Studio Add Series Search
     const studioInput = document.getElementById('studio-add-series-input');
     const studioDropdown = document.getElementById('studio-search-results');
-    studioInput.addEventListener('input', (e) => {
-      const q = e.target.value.trim().toLowerCase();
-      if (!q) {
-        studioDropdown.style.display = 'none';
-        return;
-      }
-      const matches = Object.values(state.db.items)
-        .filter(it => it.name.toLowerCase().includes(q) || it.code.toLowerCase().includes(q))
-        .sort((a, b) => a.seq - b.seq)
-        .slice(0, 15);
+    if (studioInput && studioDropdown) {
+      studioInput.addEventListener('input', (e) => {
+        const q = e.target.value.trim().toLowerCase();
+        if (!q) {
+          studioDropdown.style.display = 'none';
+          return;
+        }
+        const matches = Object.values(state.db.items)
+          .filter(it => it.name.toLowerCase().includes(q) || it.code.toLowerCase().includes(q))
+          .sort((a, b) => a.seq - b.seq)
+          .slice(0, 15);
 
-      if (matches.length === 0) {
-        studioDropdown.innerHTML = '<div style="padding: 0.75rem; color: var(--text-muted); font-size: 0.85rem;">No matching series found</div>';
-      } else {
-        studioDropdown.innerHTML = matches.map(it => `
-          <div class="search-result-item" onclick="App.addStudioSeries('${it.code}')">
-            <div>
-              <div class="item-title">
-                <span class="level-badge">Seq #${it.seq}</span>
-                <strong>${it.name}</strong>
+        if (matches.length === 0) {
+          studioDropdown.innerHTML = '<div style="padding: 0.75rem; color: var(--text-muted); font-size: 0.85rem;">No matching series found</div>';
+        } else {
+          studioDropdown.innerHTML = matches.map(it => `
+            <div class="search-result-item" onclick="App.addStudioSeries('${it.code}')">
+              <div>
+                <div class="item-title">
+                  <span class="level-badge">Seq #${it.seq}</span>
+                  <strong>${it.name}</strong>
+                </div>
+                <div class="item-path">Code: <code>${it.code}</code> • Level ${it.level}</div>
               </div>
-              <div class="item-path">Code: <code>${it.code}</code> • Level ${it.level}</div>
+              <span class="badge badge-primary">+ Add</span>
             </div>
-            <span class="badge badge-primary">+ Add</span>
-          </div>
-        `).join('');
-      }
-      studioDropdown.style.display = 'block';
-    });
+          `).join('');
+        }
+        studioDropdown.style.display = 'block';
+      });
+    }
 
     // Heatmap Metric Toggle
     document.querySelectorAll('#heatmap-metric-toggle .btn-toggle').forEach(btn => {

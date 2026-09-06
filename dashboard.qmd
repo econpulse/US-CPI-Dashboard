@@ -407,9 +407,7 @@ resources:
                   <th class="action-col" style="text-align: right;">Action</th>
                 </tr>
               </thead>
-              <tbody id="drilldown-table-body">
-                <!-- Dynamic rows -->
-              </tbody>
+              <tbody id="drilldown-table-body"><tr><td colspan="9" style="text-align:center;">Loading...</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -590,12 +588,7 @@ resources:
         <!-- Heatmap Table Container -->
         <div class="table-responsive" style="max-height: 560px; overflow-y: auto;">
           <table class="heatmap-table" id="heatmap-grid-table">
-            <thead id="heatmap-table-head">
-              <!-- Rendered by JS -->
-            </thead>
-            <tbody id="heatmap-table-body">
-              <!-- Rendered by JS -->
-            </tbody>
+            <thead id="heatmap-table-head"><tr><th>Series</th></tr></thead><tbody id="heatmap-table-body"><tr><td>Loading heatmap data...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -760,9 +753,7 @@ resources:
                   <th class="sparkline-col">Trend (24M)</th>
                 </tr>
               </thead>
-              <tbody id="special-table-body">
-                <!-- Rendered dynamically by app.js -->
-              </tbody>
+              <tbody id="special-table-body"><tr><td colspan="8" style="text-align:center;">Loading...</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -836,9 +827,7 @@ resources:
                 <th>Sparkline</th>
               </tr>
             </thead>
-            <tbody id="regional-table-body">
-              <!-- Rendered by JS -->
-            </tbody>
+            <tbody id="regional-table-body"><tr><td colspan="7" style="text-align:center;">Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
