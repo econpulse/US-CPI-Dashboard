@@ -5,3 +5,4 @@ Thumbs.db
 dashboard.html
 dashboard_files/
 _site/
+.quarto/

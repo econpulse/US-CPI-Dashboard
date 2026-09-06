@@ -1,0 +1,7 @@
+﻿data/
+build_data.py
+.git/
+.gitignore
+.quarto/
+dashboard_files/
+_site/
