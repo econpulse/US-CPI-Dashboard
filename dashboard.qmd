@@ -9,6 +9,7 @@ format:
     include-in-header:
       - text: |
           <script src="chart.min.js"></script>
+          <script src="xlsx.mini.min.js"></script>
           <script src="cpi_data.js"></script>
           <script src="js/engine.js"></script>
           <script src="js/state.js"></script>
@@ -24,6 +25,7 @@ format:
 resources:
   - "styles.css"
   - "chart.min.js"
+  - "xlsx.mini.min.js"
   - "cpi_data.js"
   - "app.js"
   - "js/*"
@@ -299,6 +301,9 @@ resources:
         <div class="controls-group">
           <button class="btn-toggle" id="btn-toggle-tree-panel" onclick="App.toggleTreeNavigator()" style="background: var(--bg-card); border: 1px solid var(--border-color); color: var(--accent-blue);">
             🌳 Toggle Hierarchy Tree
+          </button>
+          <button class="btn-toggle" id="btn-export-drilldown-excel" onclick="App.exportDrilldownExcel()" style="background: var(--bg-card); border: 1px solid var(--border-color); color: #10b981; font-weight: 500;" title="Hierarchie als Excel-Datei exportieren (YoY- & MoM-Worksheets, letzte 12 Monate)">
+            📥 Export Excel
           </button>
           <label style="font-size: 0.8rem; color: var(--text-secondary);">Seasonality:</label>
           <div class="btn-toggle-group" id="drilldown-seas-toggle">

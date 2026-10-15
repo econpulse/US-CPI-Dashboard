@@ -398,6 +398,81 @@ window.CPI_DRILLDOWN = (function () {
     });
   }
 
+  function exportDrilldownExcel() {
+    if (typeof XLSX === 'undefined') {
+      alert('Excel-Export-Modul (SheetJS) wurde noch nicht geladen.');
+      return;
+    }
+
+    const db = state.db || window.CPI_DATABASE;
+    if (!db || !db.dates || !db.items) {
+      alert('Datenbank ist noch nicht verfügbar.');
+      return;
+    }
+
+    // Last 12 months
+    const recentDates = db.dates.slice(-12);
+    const header = ['Seq', 'Code', 'Level', 'Component', 'Weight (%)', ...recentDates];
+
+    const yoyRows = [header];
+    const momRows = [header];
+
+    // Recursive depth-first traversal of the BLS hierarchy tree starting from SA0 (same as Toggle Hierarchy Tree)
+    function traverse(code, depth = 0) {
+      const it = db.items[code];
+      if (!it) return;
+
+      const indent = '   '.repeat(depth);
+      const displayName = indent + it.name;
+      const weight = (it.weight_u !== undefined && it.weight_u !== null) ? it.weight_u : '';
+
+      const acc = window.CPI_ENGINE ? window.CPI_ENGINE.getItem(it.code, '0000') : null;
+      const yoyArr = acc ? acc.getYoY().slice(-12) : [];
+      const momArr = acc ? acc.getMoM().slice(-12) : [];
+
+      const yoyVals = [];
+      const momVals = [];
+      for (let i = 0; i < recentDates.length; i++) {
+        const yVal = yoyArr[i];
+        const mVal = momArr[i];
+        yoyVals.push(yVal !== null && yVal !== undefined ? yVal : '');
+        momVals.push(mVal !== null && mVal !== undefined ? mVal : '');
+      }
+
+      yoyRows.push([it.seq, it.code, it.level, displayName, weight, ...yoyVals]);
+      momRows.push([it.seq, it.code, it.level, displayName, weight, ...momVals]);
+
+      if (it.children && it.children.length > 0) {
+        const sortedChildren = [...it.children].sort((a, b) => db.items[a].seq - db.items[b].seq);
+        sortedChildren.forEach(childCode => traverse(childCode, depth + 1));
+      }
+    }
+
+    traverse('SA0', 0);
+
+    const wb = XLSX.utils.book_new();
+    const wsYoY = XLSX.utils.aoa_to_sheet(yoyRows);
+    const wsMoM = XLSX.utils.aoa_to_sheet(momRows);
+
+    // Set user-friendly column widths
+    const colWidths = [
+      { wch: 6 },  // Seq
+      { wch: 10 }, // Code
+      { wch: 6 },  // Level
+      { wch: 45 }, // Component
+      { wch: 12 }, // Weight (%)
+      ...recentDates.map(() => ({ wch: 10 }))
+    ];
+    wsYoY['!cols'] = colWidths;
+    wsMoM['!cols'] = colWidths;
+
+    XLSX.utils.book_append_sheet(wb, wsYoY, 'YoY-Daten');
+    XLSX.utils.book_append_sheet(wb, wsMoM, 'MoM-Daten');
+
+    const filename = `US_CPI_Hierarchy_${recentDates[recentDates.length - 1]}.xlsx`;
+    XLSX.writeFile(wb, filename);
+  }
+
   return {
     navigateToDrilldown,
     selectChartSeries,
@@ -407,6 +482,8 @@ window.CPI_DRILLDOWN = (function () {
     renderBreadcrumbs,
     renderDrilldownTable,
     sortDrilldownTable,
-    renderDrilldownChart
+    renderDrilldownChart,
+    exportDrilldownExcel
   };
 })();
+

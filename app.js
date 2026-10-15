@@ -382,6 +382,7 @@ window.App = (function () {
     getCurrentDrilldownCode: () => state.drilldown.itemCode,
     toggleTreeNavigator: () => window.CPI_DRILLDOWN.toggleTreeNavigator(),
     sortDrilldownTable: (col) => window.CPI_DRILLDOWN.sortDrilldownTable(col),
+    exportDrilldownExcel: () => window.CPI_DRILLDOWN.exportDrilldownExcel(),
     addStudioSeries: (code) => window.CPI_TIMESERIES.addStudioSeries(code),
     removeStudioSeries: (code) => window.CPI_TIMESERIES.removeStudioSeries(code),
     applyStudioPreset: (preset) => window.CPI_TIMESERIES.applyStudioPreset(preset),
