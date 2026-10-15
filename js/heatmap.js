@@ -63,18 +63,15 @@ window.CPI_HEATMAP = (function () {
     }
 
     tbody.innerHTML = itemsToShow.map(it => {
-      const s = utils.getSeries(it.code, '0000', 'S');
+      const acc = window.CPI_ENGINE ? window.CPI_ENGINE.getItem(it.code, '0000') : null;
       const hasWeight = it.weight_u !== undefined && it.weight_u !== null;
 
       let valsArr = [];
-      if (s) {
-        if (metric === 'contrib') {
-          valsArr = (hasWeight && Array.isArray(s.contrib)) ? s.contrib : [];
-        } else if (metric === 'vals') {
-          valsArr = s.vals || [];
-        } else {
-          valsArr = s[metric] || [];
-        }
+      if (acc && acc.exists) {
+        valsArr = acc.getMetric(metric, true);
+      } else {
+        const s = utils.getSeries(it.code, '0000', 'S');
+        valsArr = s ? (s[metric] || s.vals || []) : [];
       }
 
       const totalMonths = dates.length;
@@ -141,6 +138,7 @@ window.CPI_HEATMAP = (function () {
               <a href="javascript:void(0)" onclick="App.navigateToDrilldown('${it.code}')" style="color: ${fontColor}; text-decoration: none; font-weight: ${fontWeight}; overflow: hidden; text-overflow: ellipsis;" title="${it.name} (${it.code})">
                 ${it.name}
               </a>
+              ${(metric === 'mom' && acc && !acc.hasSeasonal) ? '<span class="badge-nsa" title="Not Seasonally Adjusted (BLS bietet keine Saisonbereinigung für dieses Item)">NSA</span>' : ''}
             </div>
             <div class="code-col" style="padding-left: ${indentPx + (lvl >= 1 ? 14 : 0)}px;">${it.code}</div>
           </td>
@@ -161,11 +159,12 @@ window.CPI_HEATMAP = (function () {
               `;
             }
 
+            const isNull = val === null || val === undefined || isNaN(val);
             const cellColor = utils.getHeatmapColor(val, metric);
-            let displayVal = '-';
-            let titleVal = '--';
+            let displayVal = 'NA';
+            let titleVal = 'NA (Keine Daten / Shutdown)';
 
-            if (val !== null && val !== undefined && !isNaN(val)) {
+            if (!isNull) {
               if (metric === 'contrib') {
                 displayVal = val > 0 ? `+${val.toFixed(2)}` : val.toFixed(2);
                 titleVal = utils.fmtContrib(val);
@@ -178,8 +177,12 @@ window.CPI_HEATMAP = (function () {
               }
             }
 
+            const cellStyle = isNull 
+              ? 'background: rgba(255, 255, 255, 0.02); color: var(--text-muted); opacity: 0.45; font-size: 0.68rem; font-style: italic;' 
+              : `background: ${cellColor}; color: #ffffff;`;
+
             return `
-              <td class="heatmap-cell" style="background: ${cellColor}; color: #ffffff;" title="${it.name} (${dateStr}): ${titleVal}">
+              <td class="heatmap-cell" style="${cellStyle}" title="${it.name} (${dateStr}): ${titleVal}">
                 ${displayVal}
               </td>
             `;

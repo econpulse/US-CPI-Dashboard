@@ -311,46 +311,10 @@ def build_database():
         start_idx = date_to_idx[first_d]
 
         vals = []
-        for i in range(start_idx, date_to_idx[last_d] + 1):
+        for i in range(len(sorted_dates)):
             d = sorted_dates[i]
             v = obs_map.get(d, None)
             vals.append(round(v, 3) if v is not None else None)
-
-        n = len(vals)
-        yoy = [None] * n
-        mom = [None] * n
-        ann3m = [None] * n
-        ann6m = [None] * n
-
-        for i in range(n):
-            v_curr = vals[i]
-            if v_curr is None or v_curr <= 0:
-                continue
-            if i >= 1 and vals[i-1] is not None and vals[i-1] > 0:
-                mom[i] = round(((v_curr - vals[i-1]) / vals[i-1]) * 100, 2)
-            if i >= 3 and vals[i-3] is not None and vals[i-3] > 0:
-                ann3m[i] = round((((v_curr / vals[i-3]) ** 4) - 1) * 100, 2)
-            if i >= 6 and vals[i-6] is not None and vals[i-6] > 0:
-                ann6m[i] = round((((v_curr / vals[i-6]) ** 2) - 1) * 100, 2)
-            if i >= 12 and vals[i-12] is not None and vals[i-12] > 0:
-                yoy[i] = round(((v_curr - vals[i-12]) / vals[i-12]) * 100, 2)
-
-        item_code = s_info['item']
-        weight_u = items[item_code].get('weight_u', None)
-        contrib = [round((weight_u * y) / 100, 2) if (weight_u is not None and y is not None) else None for y in yoy]
-
-        latest_val = vals[-1]
-        latest_yoy = yoy[-1]
-        latest_mom = mom[-1]
-        latest_ann3m = ann3m[-1]
-        latest_ann6m = ann6m[-1]
-        latest_contrib = contrib[-1] if contrib and contrib[-1] is not None else None
-        prev_yoy = yoy[-2] if n >= 2 else None
-        prev_mom = mom[-2] if n >= 2 else None
-        yoy_1y_ago = yoy[-13] if n >= 13 else None
-
-        sparkline_yoy = [y for y in yoy[-24:] if y is not None] if n >= 24 else [y for y in yoy if y is not None]
-        sparkline_idx = [v for v in vals[-24:] if v is not None] if n >= 24 else [v for v in vals if v is not None]
 
         processed_series[s_id] = {
             'id': s_id,
@@ -359,27 +323,13 @@ def build_database():
             'seas': s_info['seas'],
             'title': s_info['title'],
             's_idx': start_idx,
-            'vals': vals,
-            'stats': {
-                'latest_date': last_d,
-                'latest_val': latest_val,
-                'latest_yoy': latest_yoy,
-                'latest_mom': latest_mom,
-                'latest_ann3m': latest_ann3m,
-                'latest_ann6m': latest_ann6m,
-                'latest_contrib': latest_contrib,
-                'prev_yoy': prev_yoy,
-                'prev_mom': prev_mom,
-                'yoy_1y_ago': yoy_1y_ago,
-                'spark_yoy': sparkline_yoy,
-                'spark_idx': sparkline_idx
-            }
+            'vals': vals
         }
 
         key = f"{s_info['item']}_{s_info['area']}_{s_info['seas']}"
         item_to_series_map[key] = s_id
 
-    print(f"Processed {len(processed_series)} total series with computed metrics.")
+    print(f"Processed {len(processed_series)} total series with raw index values.")
 
     recessions = [
         {'name': '2001 Dot-Com Recession', 'start': '2001-03', 'end': '2001-11'},
@@ -404,36 +354,7 @@ def build_database():
         f.write('// US CPI Macro Database - Auto-generated from raw BLS data\n')
         f.write('window.CPI_DATABASE = ')
         json.dump(output_data, f, separators=(',', ':'))
-        f.write(';\n\n')
-        f.write('''// Fast metric hydration for full backward compatibility
-(function() {
-  const db = window.CPI_DATABASE;
-  if (!db || !db.series) return;
-  for (const s of Object.values(db.series)) {
-    const vals = s.vals;
-    const n = vals.length;
-    const yoy = new Array(n).fill(null);
-    const mom = new Array(n).fill(null);
-    const ann3m = new Array(n).fill(null);
-    const ann6m = new Array(n).fill(null);
-    for (let i = 0; i < n; i++) {
-      const v = vals[i];
-      if (v === null || v <= 0) continue;
-      if (i >= 1 && vals[i-1] !== null && vals[i-1] > 0) mom[i] = Math.round(((v - vals[i-1]) / vals[i-1]) * 10000) / 100;
-      if (i >= 3 && vals[i-3] !== null && vals[i-3] > 0) ann3m[i] = Math.round((Math.pow(v / vals[i-3], 4) - 1) * 10000) / 100;
-      if (i >= 6 && vals[i-6] !== null && vals[i-6] > 0) ann6m[i] = Math.round((Math.pow(v / vals[i-6], 2) - 1) * 10000) / 100;
-      if (i >= 12 && vals[i-12] !== null && vals[i-12] > 0) yoy[i] = Math.round(((v - vals[i-12]) / vals[i-12]) * 10000) / 100;
-    }
-    s.yoy = yoy;
-    s.mom = mom;
-    s.ann3m = ann3m;
-    s.ann6m = ann6m;
-    const item = db.items[s.item];
-    const w = item ? item.weight_u : null;
-    s.contrib = (w !== null && w !== undefined) ? yoy.map(y => y !== null ? Math.round((w * y) / 100 * 100) / 100 : null) : new Array(n).fill(null);
-  }
-})();
-''')
+        f.write(';\n')
 
     file_size_mb = os.path.getsize(output_file) / 1024 / 1024
     print(f"Success! Generated {output_file} ({file_size_mb:.2f} MB).")

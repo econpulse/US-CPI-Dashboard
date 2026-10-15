@@ -120,7 +120,7 @@ window.CPI_OVERVIEW = (function () {
             fill: true,
             pointRadius: 0,
             pointHoverRadius: 5,
-            spanGaps: true
+            spanGaps: false
           },
           {
             label: 'Core CPI (Ex Food & Energy YoY %)',
@@ -131,7 +131,7 @@ window.CPI_OVERVIEW = (function () {
             fill: false,
             pointRadius: 0,
             pointHoverRadius: 5,
-            spanGaps: true
+            spanGaps: false
           },
           {
             label: 'Fed 2.0% Inflation Target',

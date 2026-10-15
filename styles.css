@@ -157,6 +157,20 @@ body {
   border: 1px solid rgba(251, 146, 60, 0.3);
 }
 
+.badge-nsa {
+  display: inline-block;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  border-radius: 4px;
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--text-muted);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  margin-left: 0.25rem;
+  vertical-align: middle;
+  letter-spacing: 0.03em;
+}
+
 .nav-tabs {
   display: flex;
   gap: 0.35rem;
@@ -313,6 +327,7 @@ body {
 .val-warm { color: var(--color-up-warm); font-weight: 600; }
 .val-cool { color: var(--color-down-cool); font-weight: 600; }
 .val-cold { color: var(--color-down-cold); font-weight: 600; }
+.val-na { color: var(--text-muted); opacity: 0.7; font-weight: 500; font-style: italic; }
 
 .trend-pill {
   display: inline-flex;

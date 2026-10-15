@@ -10,6 +10,7 @@ format:
       - text: |
           <script src="chart.min.js"></script>
           <script src="cpi_data.js"></script>
+          <script src="js/engine.js"></script>
           <script src="js/state.js"></script>
           <script src="js/updater.js"></script>
           <script src="js/overview.js"></script>
@@ -26,6 +27,7 @@ resources:
   - "cpi_data.js"
   - "app.js"
   - "js/*"
+  - "js/engine.js"
   - "js/state.js"
   - "js/updater.js"
   - "js/overview.js"

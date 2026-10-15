@@ -89,19 +89,20 @@ window.CPI_SPECIAL = (function () {
     }
 
     const rows = items.map(it => {
-      const s = utils.getSeries(it.code, '0000', state.special.seas);
-      const stats = s ? s.stats : null;
+      const acc = window.CPI_ENGINE ? window.CPI_ENGINE.getItem(it.code, '0000') : null;
+      const stats = acc ? acc.getSnapshot() : (utils.getSeries(it.code, '0000', state.special.seas)?.stats || null);
       return {
         seq: it.seq,
         code: it.code,
         name: it.name,
         level: it.level,
-        weight: it.weight_u !== undefined ? it.weight_u : null,
+        weight: it.weight_u !== undefined ? it.weight_u : (acc ? acc.weight : null),
         yoy: stats ? stats.latest_yoy : null,
         contrib: stats ? stats.latest_contrib : null,
         mom: stats ? stats.latest_mom : null,
         ann3m: stats ? stats.latest_ann3m : null,
         val: stats ? stats.latest_val : null,
+        isMoM_NSA: stats ? stats.isMoM_NSA : false,
         spark: stats ? stats.spark_yoy : []
       };
     });
@@ -134,7 +135,7 @@ window.CPI_SPECIAL = (function () {
           <td class="font-mono text-muted">${utils.fmtWeight(r.weight)}</td>
           <td class="${utils.getValColorClass(r.yoy)} font-mono">${utils.fmtPct(r.yoy)}</td>
           <td class="font-mono" style="font-weight: 600; color: ${contribColor};">${utils.fmtContrib(r.contrib)}</td>
-          <td class="${utils.getValColorClass(r.mom)} font-mono">${utils.fmtPct(r.mom, true)}</td>
+          <td class="${utils.getValColorClass(r.mom)} font-mono">${utils.fmtPct(r.mom, true)}${r.isMoM_NSA ? ' <span class="badge-nsa" title="Not Seasonally Adjusted">NSA</span>' : ''}</td>
           <td class="${utils.getValColorClass(r.ann3m)} font-mono">${utils.fmtPct(r.ann3m, true)}</td>
           <td class="sparkline-col">
             <canvas class="sparkline-canvas" id="spark-special-${r.code}"></canvas>
@@ -215,22 +216,17 @@ window.CPI_SPECIAL = (function () {
       : metric === 'ann3m' ? '3-Month Annualized Rate (%)'
       : 'Index Level (1982-84=100)';
 
+    const acc = window.CPI_ENGINE ? window.CPI_ENGINE.getItem(code, '0000') : null;
+    const isNSA = (metric === 'mom' || metric === 'ann3m') && (!acc || !acc.hasSeasonal);
     const titleSuffix = metric === 'contrib' ? 'YOY CONTRIB (pp)' : metric.toUpperCase();
-    if (titleEl) titleEl.textContent = `${item.name} (${titleSuffix})`;
-    if (subTitleEl) subTitleEl.textContent = s ? s.title : `Time series for ${item.name} (Seq #${item.seq})`;
+    if (titleEl) titleEl.textContent = `${item.name} (${titleSuffix})${isNSA ? ' [NSA]' : ''}`;
+    if (subTitleEl) subTitleEl.textContent = ((acc && acc.title) ? acc.title : (s ? s.title : `Time series for ${item.name} (Seq #${item.seq})`)) + (isNSA ? ' • Not Seasonally Adjusted' : '');
 
-    if (!s) return;
+    if (!acc || !acc.exists) return;
 
     const { startIdx, endIdx } = utils.getDateIndices(state.special.years);
     const labels = state.db.dates.slice(startIdx, endIdx + 1);
-    let metricArr = [];
-    if (metric === 'contrib') {
-      metricArr = (hasWeight && Array.isArray(s.contrib)) ? s.contrib : [];
-    } else if (metric === 'vals') {
-      metricArr = s.vals || [];
-    } else {
-      metricArr = s[metric] || [];
-    }
+    const metricArr = acc.getMetric(metric, state.special.seas === 'S');
     const dataVals = metricArr.slice(startIdx, endIdx + 1);
 
     const { gridColor, textColor } = utils.getThemeColors();
@@ -254,7 +250,7 @@ window.CPI_SPECIAL = (function () {
             fill: metric === 'yoy' || metric === 'mom' || metric === 'contrib',
             pointRadius: 0,
             pointHoverRadius: 5,
-            spanGaps: true
+            spanGaps: false
           }
         ]
       },
@@ -267,8 +263,9 @@ window.CPI_SPECIAL = (function () {
           tooltip: {
             callbacks: {
               label: (ctx) => {
+                if (ctx.raw === null || ctx.raw === undefined) return `${ctx.dataset.label}: NA`;
                 if (metric === 'contrib') return `${ctx.dataset.label}: ${utils.fmtContrib(ctx.raw)}`;
-                if (metric === 'vals') return `${ctx.dataset.label}: ${ctx.raw ? ctx.raw.toFixed(3) : '--'}`;
+                if (metric === 'vals') return `${ctx.dataset.label}: ${ctx.raw !== null && ctx.raw !== undefined ? ctx.raw.toFixed(3) : 'NA'}`;
                 return `${ctx.dataset.label}: ${utils.fmtPct(ctx.raw)}`;
               }
             }

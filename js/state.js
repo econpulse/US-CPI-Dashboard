@@ -69,7 +69,7 @@ window.CPI_UTILS = (function () {
 
   // Helper: Format Percentage with strict precision
   function fmtPct(val, plus = false) {
-    if (val === null || val === undefined || isNaN(val)) return '--';
+    if (val === null || val === undefined || isNaN(val)) return 'NA';
     const num = Number(val);
     const sign = plus && num > 0 ? '+' : '';
     return `${sign}${num.toFixed(2)}%`;
@@ -84,7 +84,7 @@ window.CPI_UTILS = (function () {
 
   // Helper: Format Contribution in Percentage Points (pp)
   function fmtContrib(val, plus = true) {
-    if (val === null || val === undefined || isNaN(val)) return '--';
+    if (val === null || val === undefined || isNaN(val)) return 'NA';
     const num = Number(val);
     const sign = plus && num > 0 ? '+' : '';
     return `${sign}${num.toFixed(2)} pp`;
@@ -100,7 +100,7 @@ window.CPI_UTILS = (function () {
 
   // Helper: Get Value Color Class
   function getValColorClass(val) {
-    if (val === null || val === undefined || isNaN(val)) return '';
+    if (val === null || val === undefined || isNaN(val)) return 'val-na';
     const num = Number(val);
     if (num > 4.5) return 'val-hot';
     if (num > 2.5) return 'val-warm';
@@ -133,20 +133,36 @@ window.CPI_UTILS = (function () {
     }
   }
 
-  // Find Series Object for Item, Area, and Seasonality
+  // Find Series Object for Item, Area, and Seasonality with dynamic JIT engine binding
   function getSeries(itemCode, areaCode = '0000', seas = 'S') {
     const db = window.CPI_STATE.db;
-    if (!db) return null;
+    if (!db || !db.series_map) return null;
     const key = `${itemCode}_${areaCode}_${seas}`;
     let sId = db.series_map[key];
     // Fallback if seasonal not found, try unadjusted
     if (!sId && seas === 'S') {
       sId = db.series_map[`${itemCode}_${areaCode}_U`];
     }
-    return sId ? db.series[sId] : null;
+    const s = sId ? db.series[sId] : null;
+    if (!s) return null;
+
+    // Attach dynamic lazy getters for zero-overhead compatibility
+    if (!s._engine_hooked && window.CPI_ENGINE) {
+      const itemAcc = window.CPI_ENGINE.getItem(itemCode, areaCode);
+      Object.defineProperties(s, {
+        yoy: { get: () => itemAcc.getYoY(), configurable: true },
+        mom: { get: () => itemAcc.getMoM(), configurable: true },
+        ann3m: { get: () => itemAcc.getAnn3M(), configurable: true },
+        ann6m: { get: () => itemAcc.getAnn6M(), configurable: true },
+        contrib: { get: () => itemAcc.getContrib(), configurable: true },
+        stats: { get: () => itemAcc.getSnapshot(), configurable: true }
+      });
+      s._engine_hooked = true;
+    }
+    return s;
   }
 
-  // Draw Mini Sparkline on HTML5 Canvas
+  // Draw Mini Sparkline on HTML5 Canvas with visible gap handling for NA/null
   function drawSparkline(canvasId, dataPoints) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
@@ -162,38 +178,67 @@ window.CPI_UTILS = (function () {
 
     if (!dataPoints || dataPoints.length < 2) return;
 
-    const min = Math.min(...dataPoints);
-    const max = Math.max(...dataPoints);
+    const validPts = dataPoints.filter(v => v !== null && v !== undefined && !isNaN(v));
+    if (validPts.length < 2) return;
+
+    const min = Math.min(...validPts);
+    const max = Math.max(...validPts);
     const range = (max - min) === 0 ? 1 : (max - min);
 
     const padding = 4;
     const plotH = height - (padding * 2);
     const plotW = width - (padding * 2);
 
-    ctx.beginPath();
-    for (let i = 0; i < dataPoints.length; i++) {
-      const x = padding + (i / (dataPoints.length - 1)) * plotW;
-      const y = padding + plotH - ((dataPoints[i] - min) / range) * plotH;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-
-    const lastVal = dataPoints[dataPoints.length - 1];
+    const lastVal = validPts[validPts.length - 1];
     const strokeColor = lastVal > 3.0 ? '#f87171' : (lastVal > 2.0 ? '#fb923c' : '#34d399');
 
     ctx.strokeStyle = strokeColor;
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    ctx.stroke();
 
-    // End point dot
-    const lastX = padding + plotW;
-    const lastY = padding + plotH - ((lastVal - min) / range) * plotH;
+    let inPath = false;
     ctx.beginPath();
-    ctx.arc(lastX, lastY, 3, 0, Math.PI * 2);
-    ctx.fillStyle = strokeColor;
-    ctx.fill();
+    for (let i = 0; i < dataPoints.length; i++) {
+      const val = dataPoints[i];
+      if (val === null || val === undefined || isNaN(val)) {
+        if (inPath) {
+          ctx.stroke();
+          ctx.beginPath();
+          inPath = false;
+        }
+        continue;
+      }
+      const x = padding + (i / (dataPoints.length - 1)) * plotW;
+      const y = padding + plotH - ((val - min) / range) * plotH;
+      if (!inPath) {
+        ctx.moveTo(x, y);
+        inPath = true;
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+    if (inPath) {
+      ctx.stroke();
+    }
+
+    // End point dot on latest valid point
+    let lastIdx = -1;
+    for (let i = dataPoints.length - 1; i >= 0; i--) {
+      if (dataPoints[i] !== null && dataPoints[i] !== undefined && !isNaN(dataPoints[i])) {
+        lastIdx = i;
+        break;
+      }
+    }
+    if (lastIdx >= 0) {
+      const endVal = dataPoints[lastIdx];
+      const lastX = padding + (lastIdx / (dataPoints.length - 1)) * plotW;
+      const lastY = padding + plotH - ((endVal - min) / range) * plotH;
+      ctx.beginPath();
+      ctx.arc(lastX, lastY, 3, 0, Math.PI * 2);
+      ctx.fillStyle = strokeColor;
+      ctx.fill();
+    }
   }
 
   // Get Filtered Date Indices based on Years Lookback

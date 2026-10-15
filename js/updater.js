@@ -117,7 +117,26 @@ window.CPI_UPDATER = (function () {
           }
 
           await saveToStorage(customDb);
-          console.log('Cached CPI database successfully migrated and saved.');
+      // Auto-migrate series vals to full timeline alignment
+      if (customDb.series && customDb.dates) {
+        const totalDates = customDb.dates.length;
+        let migrationCount = 0;
+        for (const s of Object.values(customDb.series)) {
+          if (s.vals && s.vals.length < totalDates) {
+            const sIdx = s.s_idx || 0;
+            const aligned = new Array(totalDates).fill(null);
+            for (let i = 0; i < s.vals.length; i++) {
+              if (sIdx + i < totalDates) {
+                aligned[sIdx + i] = s.vals[i];
+              }
+            }
+            s.vals = aligned;
+            migrationCount++;
+          }
+        }
+        if (migrationCount > 0) {
+          console.log(`Auto-aligned ${migrationCount} series in cached IndexedDB database.`);
+          await saveToStorage(customDb);
         }
       }
 
@@ -258,57 +277,10 @@ window.CPI_UPDATER = (function () {
       const endIdx = dateToIdx[lastD];
 
       const vals = [];
-      for (let i = startIdx; i <= endIdx; i++) {
+      for (let i = 0; i < sortedDates.length; i++) {
         const d = sortedDates[i];
         vals.push(obsMap[d] !== undefined ? obsMap[d] : null);
       }
-
-      const n = vals.length;
-      const yoy = new Array(n).fill(null);
-      const mom = new Array(n).fill(null);
-      const ann3m = new Array(n).fill(null);
-      const ann6m = new Array(n).fill(null);
-
-      for (let i = 0; i < n; i++) {
-        const vCurr = vals[i];
-        if (vCurr === null || vCurr <= 0) continue;
-
-        // MoM Change
-        if (i >= 1 && vals[i - 1] !== null && vals[i - 1] > 0) {
-          mom[i] = Math.round(((vCurr - vals[i - 1]) / vals[i - 1]) * 10000) / 100;
-        }
-        // 3-Month Annualized Momentum
-        if (i >= 3 && vals[i - 3] !== null && vals[i - 3] > 0) {
-          ann3m[i] = Math.round((Math.pow(vCurr / vals[i - 3], 4) - 1) * 10000) / 100;
-        }
-        // 6-Month Annualized
-        if (i >= 6 && vals[i - 6] !== null && vals[i - 6] > 0) {
-          ann6m[i] = Math.round((Math.pow(vCurr / vals[i - 6], 2) - 1) * 10000) / 100;
-        }
-        // YoY Inflation
-        if (i >= 12 && vals[i - 12] !== null && vals[i - 12] > 0) {
-          yoy[i] = Math.round(((vCurr - vals[i - 12]) / vals[i - 12]) * 10000) / 100;
-        }
-      }
-
-      const itemCode = sInfo.item;
-      const weightU = items[itemCode] ? items[itemCode].weight_u : null;
-      const contrib = yoy.map(y => (weightU !== null && y !== null) ? Math.round((weightU * y) / 100 * 100) / 100 : null);
-
-      const latestVal = vals[n - 1];
-      const latestYoY = yoy[n - 1];
-      const latestMoM = mom[n - 1];
-      const latestAnn3m = ann3m[n - 1];
-      const latestAnn6m = ann6m[n - 1];
-      const latestContrib = contrib[n - 1] !== undefined ? contrib[n - 1] : null;
-      const prevYoY = n >= 2 ? yoy[n - 2] : null;
-      const prevMoM = n >= 2 ? mom[n - 2] : null;
-      const yoy1yAgo = n >= 13 ? yoy[n - 13] : null;
-
-      const sparkSlice = yoy.slice(-24);
-      const sparkYoY = sparkSlice.filter(y => y !== null);
-      const sparkIdxSlice = vals.slice(-24);
-      const sparkIdx = sparkIdxSlice.filter(v => v !== null);
 
       processedSeries[sId] = {
         id: sId,
@@ -317,28 +289,12 @@ window.CPI_UPDATER = (function () {
         seas: sInfo.seas,
         title: sInfo.title,
         base: sInfo.base,
-        vals: vals,
-        yoy: yoy,
-        mom: mom,
-        ann3m: ann3m,
-        ann6m: ann6m,
-        contrib: contrib,
-        stats: {
-          latest_date: lastD,
-          latest_val: latestVal,
-          latest_yoy: latestYoY,
-          latest_mom: latestMoM,
-          latest_ann3m: latestAnn3m,
-          latest_ann6m: latestAnn6m,
-          latest_contrib: latestContrib,
-          prev_yoy: prevYoY,
-          prev_mom: prevMoM,
-          yoy_1y_ago: yoy1yAgo,
-          spark_yoy: sparkYoY,
-          spark_idx: sparkIdx
-        }
+        s_idx: startIdx,
+        vals: vals
       };
     }
+
+    if (window.CPI_ENGINE) window.CPI_ENGINE.clearCache();
 
     progressCb(90, 'Saving compiled database to browser IndexedDB...');
 

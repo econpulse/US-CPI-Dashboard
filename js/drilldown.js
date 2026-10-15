@@ -81,9 +81,9 @@ window.CPI_DRILLDOWN = (function () {
 
   function renderDrilldown() {
     const item = state.db.items[state.drilldown.itemCode] || state.db.items['SA0'];
-    const seas = state.drilldown.seas;
-    const s = utils.getSeries(item.code, '0000', seas);
-    const stats = s ? s.stats : null;
+    const acc = window.CPI_ENGINE ? window.CPI_ENGINE.getItem(item.code, '0000') : null;
+    const stats = acc ? acc.getSnapshot() : (utils.getSeries(item.code, '0000', state.drilldown.seas)?.stats || null);
+    const s = utils.getSeries(item.code, '0000', state.drilldown.seas);
 
     // 1. Render Breadcrumbs
     renderBreadcrumbs(item);
@@ -94,7 +94,7 @@ window.CPI_DRILLDOWN = (function () {
     document.getElementById('drilldown-item-level').textContent = `Level ${item.level}`;
     document.getElementById('drilldown-item-name').textContent = item.name;
     document.getElementById('drilldown-item-category-type').textContent = item.category_type.replace('_', ' ').toUpperCase();
-    document.getElementById('drilldown-item-title').textContent = s ? s.title : `CPI Series for ${item.name}`;
+    document.getElementById('drilldown-item-title').textContent = (acc && acc.title) ? acc.title : (s ? s.title : `CPI Series for ${item.name}`);
 
     const elYoY = document.getElementById('drilldown-val-yoy');
     const elMoM = document.getElementById('drilldown-val-mom');
@@ -106,7 +106,7 @@ window.CPI_DRILLDOWN = (function () {
     if (stats) {
       elYoY.textContent = utils.fmtPct(stats.latest_yoy);
       elYoY.className = utils.getValColorClass(stats.latest_yoy);
-      elMoM.textContent = utils.fmtPct(stats.latest_mom, true);
+      elMoM.innerHTML = `${utils.fmtPct(stats.latest_mom, true)}${stats.isMoM_NSA ? ' <span class="badge-nsa" title="Not Seasonally Adjusted">NSA</span>' : ''}`;
       elMoM.className = utils.getValColorClass(stats.latest_mom);
       elAnn3m.textContent = utils.fmtPct(stats.latest_ann3m, true);
       elIndex.textContent = stats.latest_val ? stats.latest_val.toFixed(3) : '--';
@@ -198,21 +198,22 @@ window.CPI_DRILLDOWN = (function () {
 
     const rows = childrenCodes.map(code => {
       const it = state.db.items[code];
-      const s = utils.getSeries(code, '0000', state.drilldown.seas);
-      const stats = s ? s.stats : null;
+      const acc = window.CPI_ENGINE ? window.CPI_ENGINE.getItem(code, '0000') : null;
+      const stats = acc ? acc.getSnapshot() : (utils.getSeries(code, '0000', state.drilldown.seas)?.stats || null);
       const hasChildren = it.children && it.children.length > 0;
       return {
         seq: it.seq,
         code: code,
         name: it.name,
         level: it.level,
-        weight: it.weight_u !== undefined ? it.weight_u : null,
+        weight: it.weight_u !== undefined ? it.weight_u : (acc ? acc.weight : null),
         hasChildren: hasChildren,
         childrenCount: it.children ? it.children.length : 0,
         yoy: stats ? stats.latest_yoy : null,
         contrib: stats ? stats.latest_contrib : null,
         mom: stats ? stats.latest_mom : null,
         ann3m: stats ? stats.latest_ann3m : null,
+        isMoM_NSA: stats ? stats.isMoM_NSA : false,
         spark: stats ? stats.spark_yoy : []
       };
     });
@@ -252,7 +253,9 @@ window.CPI_DRILLDOWN = (function () {
           <td class="font-mono" style="font-weight: 600; color: ${contribColor}; font-size: 0.78rem; white-space: nowrap;">
             ${utils.fmtContrib(r.contrib)}
           </td>
-          <td class="${utils.getValColorClass(r.mom)} font-mono" style="font-size: 0.78rem;">${utils.fmtPct(r.mom, true)}</td>
+          <td class="${utils.getValColorClass(r.mom)} font-mono" style="font-size: 0.78rem; white-space: nowrap;">
+            ${utils.fmtPct(r.mom, true)}${r.isMoM_NSA ? ' <span class="badge-nsa" title="Not Seasonally Adjusted (BLS bietet für dieses Item keine Saisonbereinigung)">NSA</span>' : ''}
+          </td>
           <td class="${utils.getValColorClass(r.ann3m)} font-mono" style="font-size: 0.78rem;">${utils.fmtPct(r.ann3m, true)}</td>
           <td class="sparkline-col">
             <canvas class="sparkline-canvas" id="spark-drill-${r.code}"></canvas>
@@ -314,25 +317,20 @@ window.CPI_DRILLDOWN = (function () {
     });
 
     const metric = state.drilldown.metric;
+    const acc = window.CPI_ENGINE ? window.CPI_ENGINE.getItem(item.code, '0000') : null;
     const s = utils.getSeries(item.code, '0000', seas);
+    const isNSA = (metric === 'mom' || metric === 'ann3m') && (!acc || !acc.hasSeasonal);
 
     const titleSuffix = metric === 'contrib' ? 'YOY CONTRIB (pp)' : metric.toUpperCase();
-    document.getElementById('drilldown-chart-title').textContent = `${item.name} (${titleSuffix})`;
-    document.getElementById('drilldown-chart-subtitle').textContent = s ? s.title : `Time Series for ${item.name} (#${item.seq})`;
+    document.getElementById('drilldown-chart-title').textContent = `${item.name} (${titleSuffix})${isNSA ? ' [NSA]' : ''}`;
+    document.getElementById('drilldown-chart-subtitle').textContent = ((acc && acc.title) ? acc.title : (s ? s.title : `Time Series for ${item.name} (#${item.seq})`)) + (isNSA ? ' • Not Seasonally Adjusted (BLS provides no SA series)' : '');
 
-    if (!s) return;
+    if (!acc || !acc.exists) return;
 
     // Apply Timeframe Filter (Default 3Y)
     const { startIdx, endIdx } = utils.getDateIndices(state.drilldown.years);
     const labels = state.db.dates.slice(startIdx, endIdx + 1);
-    let metricArr = [];
-    if (metric === 'contrib') {
-      metricArr = (hasWeight && Array.isArray(s.contrib)) ? s.contrib : [];
-    } else if (metric === 'vals') {
-      metricArr = s.vals || [];
-    } else {
-      metricArr = s[metric] || [];
-    }
+    const metricArr = acc.getMetric(metric, seas === 'S');
     const dataVals = metricArr.slice(startIdx, endIdx + 1);
 
     const { gridColor, textColor } = utils.getThemeColors();
@@ -362,7 +360,7 @@ window.CPI_DRILLDOWN = (function () {
             fill: metric === 'yoy' || metric === 'mom' || metric === 'contrib',
             pointRadius: 0,
             pointHoverRadius: 5,
-            spanGaps: true
+            spanGaps: false
           }
         ]
       },
@@ -375,8 +373,9 @@ window.CPI_DRILLDOWN = (function () {
           tooltip: {
             callbacks: {
               label: (ctx) => {
+                if (ctx.raw === null || ctx.raw === undefined) return `${ctx.dataset.label}: NA`;
                 if (metric === 'contrib') return `${ctx.dataset.label}: ${utils.fmtContrib(ctx.raw)}`;
-                if (metric === 'vals') return `${ctx.dataset.label}: ${ctx.raw ? ctx.raw.toFixed(3) : '--'}`;
+                if (metric === 'vals') return `${ctx.dataset.label}: ${ctx.raw !== null && ctx.raw !== undefined ? ctx.raw.toFixed(3) : 'NA'}`;
                 return `${ctx.dataset.label}: ${utils.fmtPct(ctx.raw)}`;
               }
             }

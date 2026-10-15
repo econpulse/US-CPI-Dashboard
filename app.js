@@ -41,14 +41,28 @@ window.App = (function () {
     // Attach Event Listeners
     setupEventListeners();
 
-    // Render Initial Views
-    window.CPI_OVERVIEW.renderOverview();
-    window.CPI_DRILLDOWN.renderDrilldown();
-    window.CPI_TIMESERIES.renderTimeseriesStudio();
-    window.CPI_HEATMAP.renderHeatmap();
-    window.CPI_THEMES.renderThemes();
-    window.CPI_SPECIAL.renderSpecialAggregates();
-    window.CPI_REGIONS.renderRegions();
+    // Render Initial Active View Only (Ultra-fast startup, sub-50ms)
+    switchTab(state.currentTab || 'overview');
+  }
+
+  const renderedTabs = new Set();
+
+  function renderTab(tabId) {
+    if (tabId === 'overview') {
+      window.CPI_OVERVIEW.renderOverview();
+    } else if (tabId === 'drilldown') {
+      window.CPI_DRILLDOWN.renderDrilldown();
+    } else if (tabId === 'timeseries') {
+      window.CPI_TIMESERIES.renderTimeseriesStudio();
+    } else if (tabId === 'heatmap') {
+      window.CPI_HEATMAP.renderHeatmap();
+    } else if (tabId === 'themes') {
+      window.CPI_THEMES.renderThemes();
+    } else if (tabId === 'special') {
+      window.CPI_SPECIAL.renderSpecialAggregates();
+    } else if (tabId === 'regions') {
+      window.CPI_REGIONS.renderRegions();
+    }
   }
 
   function setupEventListeners() {
@@ -59,14 +73,10 @@ window.App = (function () {
         state.theme = state.theme === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', state.theme);
         localStorage.setItem('cpi_theme', state.theme);
-        // Re-render active charts
-        window.CPI_OVERVIEW.renderOverviewTrajectoryChart();
-        window.CPI_OVERVIEW.renderOverviewMomentumChart();
-        window.CPI_DRILLDOWN.renderDrilldownChart();
-        window.CPI_TIMESERIES.renderStudioChart();
-        window.CPI_THEMES.renderThemeCharts();
-        window.CPI_SPECIAL.renderSpecialChart();
-        window.CPI_REGIONS.renderRegionChart();
+        // Clear cached tab renders and re-render currently active tab with new colors
+        renderedTabs.clear();
+        renderedTabs.add(state.currentTab);
+        renderTab(state.currentTab);
       });
     }
 
@@ -341,22 +351,27 @@ window.App = (function () {
       content.classList.toggle('active', content.id === `tab-${tabId}`);
     });
 
-    setTimeout(() => {
-      if (tabId === 'overview') {
-        window.CPI_OVERVIEW.renderOverviewTrajectoryChart();
-        window.CPI_OVERVIEW.renderOverviewMomentumChart();
-      } else if (tabId === 'drilldown') {
-        window.CPI_DRILLDOWN.renderDrilldownChart();
-      } else if (tabId === 'timeseries') {
-        window.CPI_TIMESERIES.renderStudioChart();
-      } else if (tabId === 'themes') {
-        window.CPI_THEMES.renderThemeCharts();
-      } else if (tabId === 'special') {
-        window.CPI_SPECIAL.renderSpecialChart();
-      } else if (tabId === 'regions') {
-        window.CPI_REGIONS.renderRegionChart();
-      }
-    }, 50);
+    if (!renderedTabs.has(tabId)) {
+      renderTab(tabId);
+      renderedTabs.add(tabId);
+    } else {
+      setTimeout(() => {
+        if (tabId === 'overview') {
+          window.CPI_OVERVIEW.renderOverviewTrajectoryChart();
+          window.CPI_OVERVIEW.renderOverviewMomentumChart();
+        } else if (tabId === 'drilldown') {
+          window.CPI_DRILLDOWN.renderDrilldownChart();
+        } else if (tabId === 'timeseries') {
+          window.CPI_TIMESERIES.renderStudioChart();
+        } else if (tabId === 'themes') {
+          window.CPI_THEMES.renderThemeCharts();
+        } else if (tabId === 'special') {
+          window.CPI_SPECIAL.renderSpecialChart();
+        } else if (tabId === 'regions') {
+          window.CPI_REGIONS.renderRegionChart();
+        }
+      }, 50);
+    }
   }
 
   return {

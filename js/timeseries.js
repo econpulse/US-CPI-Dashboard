@@ -83,29 +83,18 @@ window.CPI_TIMESERIES = (function () {
 
     const datasets = state.timeseries.activeItems.map((code, idx) => {
       const item = state.db.items[code] || { name: code };
+      const acc = window.CPI_ENGINE ? window.CPI_ENGINE.getItem(code, '0000') : null;
       const s = utils.getSeries(code, '0000', seas);
       const color = utils.SERIES_COLORS[idx % utils.SERIES_COLORS.length];
 
-      if (!s) return null;
+      if (!acc || !acc.exists) return null;
 
-      let rawData = [];
-      const hasWeight = item.weight_u !== undefined && item.weight_u !== null;
-      if (metric === 'rebased') {
-        const sliceVals = s.vals.slice(startIdx, endIdx + 1);
-        const baseVal = sliceVals.find(v => v !== null && v > 0) || 100;
-        rawData = sliceVals.map(v => v !== null ? Number(((v / baseVal) * 100).toFixed(2)) : null);
-      } else if (metric === 'contrib') {
-        const contribArr = (hasWeight && Array.isArray(s.contrib)) ? s.contrib : new Array(s.vals ? s.vals.length : 0).fill(null);
-        rawData = contribArr.slice(startIdx, endIdx + 1);
-      } else if (metric === 'vals') {
-        rawData = (s.vals || []).slice(startIdx, endIdx + 1);
-      } else {
-        const metricArr = s[metric] || [];
-        rawData = metricArr.slice(startIdx, endIdx + 1);
-      }
+      const isNSA = (metric === 'mom' || metric === 'ann3m' || metric === 'ann6m') && !acc.hasSeasonal;
+      const metricArr = acc.getMetric(metric, seas === 'S');
+      const rawData = metricArr.slice(startIdx, endIdx + 1);
 
       return {
-        label: `${item.name} (${code})`,
+        label: `${item.name} (${code})${isNSA ? ' [NSA]' : ''}`,
         data: rawData,
         borderColor: color,
         backgroundColor: color,
@@ -114,7 +103,7 @@ window.CPI_TIMESERIES = (function () {
         fill: false,
         pointRadius: 0,
         pointHoverRadius: 5,
-        spanGaps: true
+        spanGaps: false
       };
     }).filter(d => d !== null);
 
@@ -132,8 +121,9 @@ window.CPI_TIMESERIES = (function () {
           tooltip: {
             callbacks: {
               label: (ctx) => {
+                if (ctx.raw === null || ctx.raw === undefined) return `${ctx.dataset.label}: NA`;
                 if (metric === 'contrib') return `${ctx.dataset.label}: ${utils.fmtContrib(ctx.raw)}`;
-                if (metric === 'vals' || metric === 'rebased') return `${ctx.dataset.label}: ${ctx.raw}`;
+                if (metric === 'vals' || metric === 'rebased') return `${ctx.dataset.label}: ${ctx.raw !== null && ctx.raw !== undefined ? ctx.raw : 'NA'}`;
                 return `${ctx.dataset.label}: ${utils.fmtPct(ctx.raw)}`;
               }
             }

@@ -28,9 +28,9 @@ window.CPI_THEMES = (function () {
         data: {
           labels,
           datasets: [
-            { label: 'Total Shelter (SAH1)', data: sTotalShelter?.yoy.slice(startIdx, endIdx + 1), borderColor: '#38bdf8', borderWidth: 2.5, pointRadius: 0, spanGaps: true },
-            { label: 'Rent of Primary Residence (SEHA)', data: sRent?.yoy.slice(startIdx, endIdx + 1), borderColor: '#f43f5e', borderWidth: 2, pointRadius: 0, spanGaps: true },
-            { label: "Owners' Equivalent Rent (SEHC)", data: sOER?.yoy.slice(startIdx, endIdx + 1), borderColor: '#10b981', borderWidth: 2, pointRadius: 0, spanGaps: true }
+            { label: 'Total Shelter (SAH1)', data: sTotalShelter?.yoy.slice(startIdx, endIdx + 1), borderColor: '#38bdf8', borderWidth: 2.5, pointRadius: 0, spanGaps: false },
+            { label: 'Rent of Primary Residence (SEHA)', data: sRent?.yoy.slice(startIdx, endIdx + 1), borderColor: '#f43f5e', borderWidth: 2, pointRadius: 0, spanGaps: false },
+            { label: "Owners' Equivalent Rent (SEHC)", data: sOER?.yoy.slice(startIdx, endIdx + 1), borderColor: '#10b981', borderWidth: 2, pointRadius: 0, spanGaps: false }
           ]
         },
         options: {
@@ -54,9 +54,9 @@ window.CPI_THEMES = (function () {
         data: {
           labels,
           datasets: [
-            { label: 'Supercore (Core Services Ex Energy)', data: sSuper?.yoy.slice(startIdx, endIdx + 1), borderColor: '#f59e0b', borderWidth: 2.5, pointRadius: 0, spanGaps: true },
-            { label: 'Core CPI (Ex Food & Energy)', data: sCore?.yoy.slice(startIdx, endIdx + 1), borderColor: '#f43f5e', borderWidth: 2, borderDash: [4, 4], pointRadius: 0, spanGaps: true },
-            { label: 'Headline CPI', data: sHeadline?.yoy.slice(startIdx, endIdx + 1), borderColor: '#38bdf8', borderWidth: 2, borderDash: [2, 2], pointRadius: 0, spanGaps: true }
+            { label: 'Supercore (Core Services Ex Energy)', data: sSuper?.yoy.slice(startIdx, endIdx + 1), borderColor: '#f59e0b', borderWidth: 2.5, pointRadius: 0, spanGaps: false },
+            { label: 'Core CPI (Ex Food & Energy)', data: sCore?.yoy.slice(startIdx, endIdx + 1), borderColor: '#f43f5e', borderWidth: 2, borderDash: [4, 4], pointRadius: 0, spanGaps: false },
+            { label: 'Headline CPI', data: sHeadline?.yoy.slice(startIdx, endIdx + 1), borderColor: '#38bdf8', borderWidth: 2, borderDash: [2, 2], pointRadius: 0, spanGaps: false }
           ]
         },
         options: {
@@ -79,8 +79,8 @@ window.CPI_THEMES = (function () {
         data: {
           labels,
           datasets: [
-            { label: 'Commodities / Core Goods (SACL1E)', data: sGoods?.yoy.slice(startIdx, endIdx + 1), borderColor: '#06b6d4', borderWidth: 2.5, pointRadius: 0, spanGaps: true },
-            { label: 'Services (SAS)', data: sServices?.yoy.slice(startIdx, endIdx + 1), borderColor: '#a855f7', borderWidth: 2.5, pointRadius: 0, spanGaps: true }
+            { label: 'Commodities / Core Goods (SACL1E)', data: sGoods?.yoy.slice(startIdx, endIdx + 1), borderColor: '#06b6d4', borderWidth: 2.5, pointRadius: 0, spanGaps: false },
+            { label: 'Services (SAS)', data: sServices?.yoy.slice(startIdx, endIdx + 1), borderColor: '#a855f7', borderWidth: 2.5, pointRadius: 0, spanGaps: false }
           ]
         },
         options: {
@@ -104,9 +104,9 @@ window.CPI_THEMES = (function () {
         data: {
           labels,
           datasets: [
-            { label: 'Gasoline (SETB01)', data: sGas?.yoy.slice(startIdx, endIdx + 1), borderColor: '#ef4444', borderWidth: 2.5, pointRadius: 0, spanGaps: true },
-            { label: 'Food at Home (SAF11)', data: sFoodHome?.yoy.slice(startIdx, endIdx + 1), borderColor: '#10b981', borderWidth: 2, pointRadius: 0, spanGaps: true },
-            { label: 'Food Away from Home (SAF12)', data: sFoodAway?.yoy.slice(startIdx, endIdx + 1), borderColor: '#f59e0b', borderWidth: 2, pointRadius: 0, spanGaps: true }
+            { label: 'Gasoline (SETB01)', data: sGas?.yoy.slice(startIdx, endIdx + 1), borderColor: '#ef4444', borderWidth: 2.5, pointRadius: 0, spanGaps: false },
+            { label: 'Food at Home (SAF11)', data: sFoodHome?.yoy.slice(startIdx, endIdx + 1), borderColor: '#10b981', borderWidth: 2, pointRadius: 0, spanGaps: false },
+            { label: 'Food Away from Home (SAF12)', data: sFoodAway?.yoy.slice(startIdx, endIdx + 1), borderColor: '#f59e0b', borderWidth: 2, pointRadius: 0, spanGaps: false }
           ]
         },
         options: {

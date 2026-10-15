@@ -37,7 +37,7 @@ window.CPI_REGIONS = (function () {
         borderColor: r.color,
         borderWidth: r.width,
         pointRadius: 0,
-        spanGaps: true
+        spanGaps: false
       };
     });
 
@@ -48,7 +48,14 @@ window.CPI_REGIONS = (function () {
         responsive: true,
         maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
-        plugins: { legend: { labels: { color: textColor } } },
+        plugins: { 
+          legend: { labels: { color: textColor } },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label}: ${utils.fmtPct(ctx.raw)}`
+            }
+          }
+        },
         scales: {
           x: { grid: { color: gridColor }, ticks: { color: textColor, maxTicksLimit: 12 } },
           y: { grid: { color: gridColor }, ticks: { color: textColor, callback: v => utils.fmtTick(v) } }
@@ -74,7 +81,7 @@ window.CPI_REGIONS = (function () {
           <td style="font-weight: 600;">${areaName}</td>
           <td>${stats ? stats.latest_date : '--'}</td>
           <td class="${utils.getValColorClass(stats?.latest_yoy)} font-mono">${utils.fmtPct(stats?.latest_yoy)}</td>
-          <td class="${utils.getValColorClass(stats?.latest_mom)} font-mono">${utils.fmtPct(stats?.latest_mom, true)}</td>
+          <td class="${utils.getValColorClass(stats?.latest_mom)} font-mono">${utils.fmtPct(stats?.latest_mom, true)}${aCode !== '0000' ? ' <span class="badge-nsa" title="Not Seasonally Adjusted (BLS veröffentlicht Regionaldaten ausschliesslich unbereinigt)">NSA</span>' : ''}</td>
           <td class="font-mono">${stats?.latest_val ? stats.latest_val.toFixed(3) : '--'}</td>
           <td class="sparkline-col">
             <canvas class="sparkline-canvas" id="spark-region-${aCode}"></canvas>
